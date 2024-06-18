@@ -181,12 +181,7 @@ export const Messages: FC<MessagesProps> = () => {
           )}
       </div>
 
-      <MessageInput
-        placeholder={inputPlaceholder}
-        isPassword={pendingForApiKey}
-        disabled={inputDisabled}
-        onEnter={onEnter}
-      />
+      <MessageInput placeholder={inputPlaceholder} disabled={inputDisabled} onEnter={onEnter} />
     </>
   );
 };
