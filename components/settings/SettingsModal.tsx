@@ -11,7 +11,7 @@ export const SettingsModal: FC<SettingsModalProps> = () => {
   const [googleVertexApiKey, setGoogleVertexApiKey] = useState('');
 
   const save = () => {
-    settingsContext?.setSettings((value) => ({ ...value, googleVertexApiKey }));
+    settingsContext?.setSetting('googleVertexApiKey', googleVertexApiKey);
     settingsContext?.closeSettingModal();
   };
 
