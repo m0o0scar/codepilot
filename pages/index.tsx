@@ -6,7 +6,7 @@ import { SettingsModal } from '@components/settings/SettingsModal';
 export default function Page() {
   return (
     <>
-      <Header title="Hello World" emoji="😎" />
+      <Header title="Code Pilot" emoji="👨‍✈️" />
 
       <div className="flex flex-col gap-2 max-w-full">
         <Navbar />
