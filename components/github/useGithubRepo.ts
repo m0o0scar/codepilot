@@ -107,7 +107,7 @@ export const useGithubRepo = () => {
 
       // include files with these extensions
       const ext = last(e.filename.split('.')) || '';
-      if (!['md', 'js', 'mjs', 'jsx', 'ts', 'tsx', 'css', 'html', 'json', 'py'].includes(ext))
+      if (!['md', 'js', 'mjs', 'jsx', 'ts', 'tsx', 'css', 'html', 'json', 'py', 'rs'].includes(ext))
         return false;
 
       // ignore these files:
