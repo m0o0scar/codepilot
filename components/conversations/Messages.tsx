@@ -165,12 +165,14 @@ export const Messages: FC<MessagesProps> = () => {
                 history.map((item, i) => {
                   // normal chat message
                   if ('role' in item) {
-                    if (item.role === 'model' && (i != history.length - 1 || !pendingForResponse)) {
-                      return (
-                        <ChatBubble
-                          key={i}
-                          message={item}
-                          footer={
+                    const showButtons =
+                      item.role === 'model' && (i != history.length - 1 || !pendingForReply);
+                    return (
+                      <ChatBubble
+                        key={i}
+                        message={item}
+                        footer={
+                          showButtons && (
                             <div className="flex flex-row gap-1">
                               <button
                                 className="btn btn-sm btn-square"
@@ -192,11 +194,10 @@ export const Messages: FC<MessagesProps> = () => {
                                 📋
                               </button>
                             </div>
-                          }
-                        />
-                      );
-                    }
-                    return <ChatBubble key={i} message={item} />;
+                          )
+                        }
+                      />
+                    );
                   }
                   // system note
                   else {
