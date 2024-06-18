@@ -57,7 +57,7 @@ export const ChatBubble: FC<ChatBubbleProps> = ({
         {/* message sent by other, render as markdown */}
         {!isSentByMe && !hasCustomContent && <Markdown content={content as string} />}
       </div>
-      {footer && <div className="chat-footer opacity-50 text-xs">{footer}</div>}
+      {footer && <div className="chat-footer opacity-50 text-xs mt-1">{footer}</div>}
     </div>
   );
 };

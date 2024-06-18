@@ -16,8 +16,16 @@ export const Messages: FC<MessagesProps> = () => {
 
   const { repo, setRepo, sourceContent, zipLoadedSize } = useGithubRepo();
 
-  const { history, pendingForReply, pendingForResponse, sendMessage, clearHistory, exportHistory } =
-    useChat(sourceContent);
+  const {
+    history,
+    pendingForReply,
+    pendingForResponse,
+    sendMessage,
+    clearHistory,
+    exportHistory,
+    copyMessagePair,
+    deleteMessagePair,
+  } = useChat(sourceContent);
 
   const pendingForApiKey = !settingsContext?.settings.googleVertexApiKey;
   const pendingForRepo = !repo;
@@ -119,11 +127,46 @@ export const Messages: FC<MessagesProps> = () => {
               </>
             )}
 
+            {/* message items */}
             {history.length > 0 &&
               history.map((item, i) => {
+                // normal chat message
                 if ('role' in item) {
+                  if (item.role === 'model' && (i != history.length - 1 || !pendingForResponse)) {
+                    return (
+                      <ChatBubble
+                        key={i}
+                        message={item}
+                        footer={
+                          <div className="flex flex-row gap-1">
+                            <button
+                              className="btn btn-sm btn-square"
+                              onClick={() => deleteMessagePair(i)}
+                            >
+                              🗑️
+                            </button>
+                            <button
+                              className="btn btn-sm btn-square"
+                              onClick={async (e) => {
+                                try {
+                                  await copyMessagePair(i);
+                                  const el = e.target as HTMLButtonElement;
+                                  el.innerText = '✅';
+                                  setTimeout(() => (el.innerHTML = '📋'), 2000);
+                                } catch (e) {}
+                              }}
+                            >
+                              📋
+                            </button>
+                          </div>
+                        }
+                      />
+                    );
+                  }
                   return <ChatBubble key={i} message={item} />;
-                } else {
+                }
+                // system note
+                else {
                   return (
                     <div
                       key={i}
@@ -136,6 +179,7 @@ export const Messages: FC<MessagesProps> = () => {
                 }
               })}
 
+            {/* conversation controls */}
             {history.length > 0 && !pendingForReply && (
               <div className="flex flex-row justify-end gap-2 p-2">
                 <button className="btn btn-sm btn-square" onClick={clearHistory}>

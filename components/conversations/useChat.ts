@@ -52,6 +52,11 @@ export const useChat = (sourceContent?: GithubRepoContent) => {
 
   const addSystemNote = (content: string) => setHistory((prev) => [...prev, { content }]);
 
+  const clearHistory = () => {
+    setHistory([]);
+    save([]);
+  };
+
   const deleteLastMessagePair = () => {
     setHistory((prev) => {
       const lastItem = last(prev);
@@ -62,9 +67,17 @@ export const useChat = (sourceContent?: GithubRepoContent) => {
     });
   };
 
-  const clearHistory = () => {
-    setHistory([]);
-    save([]);
+  const deleteMessagePair = (i: number) => {
+    setHistory((prev) => prev.filter((_, index) => index !== i && index !== i - 1));
+  };
+
+  const copyMessagePair = async (i: number) => {
+    const modelMessage = history[i];
+    const userMessage = history[i - 1];
+    if (modelMessage && userMessage) {
+      const content = `## ${userMessage.content}\n\n${modelMessage.content}`;
+      await navigator.clipboard.writeText(content);
+    }
   };
 
   const exportHistory = () => {
@@ -163,8 +176,10 @@ ${sourceContent.tree}
     history,
     pendingForResponse,
     pendingForReply,
-    sendMessage,
     clearHistory,
+    deleteMessagePair,
+    copyMessagePair,
+    sendMessage,
     exportHistory,
   };
 };
