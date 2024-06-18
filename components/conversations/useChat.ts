@@ -141,11 +141,11 @@ ${sourceContent.tree}
         },
       });
 
-      const result = await chat.sendMessageStream(content);
-
-      let acc = '';
-
       try {
+        const result = await chat.sendMessageStream(content);
+
+        let acc = '';
+
         for await (const chunk of result.stream) {
           const text = chunk.text();
           acc += text;

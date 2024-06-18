@@ -5,7 +5,8 @@ export const format = (n: number, zeroPlaceholder = '-') => {
   return (n / 1_000_000).toFixed(1) + 'M';
 };
 
-export const formatFileSize = (n: number) => {
+export const formatFileSize = (n: number, zeroPlaceholder = '-') => {
+  if (!n) return zeroPlaceholder || '0';
   if (n < 1024) return n + ' bytes';
   if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
   return (n / (1024 * 1024)).toFixed(1) + ' MB';

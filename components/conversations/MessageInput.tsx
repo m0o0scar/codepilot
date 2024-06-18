@@ -3,10 +3,16 @@ import { FC, useState } from 'react';
 export interface MessageInputProps {
   placeholder?: string;
   disabled?: boolean;
+  isPassword?: boolean;
   onEnter?: (message: string) => void;
 }
 
-export const MessageInput: FC<MessageInputProps> = ({ placeholder, disabled, onEnter }) => {
+export const MessageInput: FC<MessageInputProps> = ({
+  placeholder,
+  disabled,
+  isPassword,
+  onEnter,
+}) => {
   const [value, setValue] = useState('');
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -17,10 +23,10 @@ export const MessageInput: FC<MessageInputProps> = ({ placeholder, disabled, onE
   };
 
   return (
-    <div className="fixed left-0 right-0 bottom-0 flex flex-row gap-2 p-2 bg-base-100 border-t">
+    <div className="fixed left-0 right-0 bottom-0 flex flex-row gap-2 p-2 bg-base-100 border-t border-t-base-300">
       <label className="input flex items-center gap-2 grow">
         <input
-          type="text"
+          type={isPassword ? 'password' : 'text'}
           className="grow"
           placeholder={placeholder || 'Type here'}
           disabled={disabled}

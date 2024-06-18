@@ -69,12 +69,29 @@ export const Messages: FC<MessagesProps> = () => {
     <>
       <div className="flex flex-col mb-16 w-full md:max-w-5xl md:mx-auto">
         {/* waiting for user to provide API key */}
-        <ChatBubble>Please provide you Google Vertex API key</ChatBubble>
+        {pendingForApiKey && (
+          <ChatBubble
+            footer={
+              <span>
+                See{' '}
+                <a
+                  className="underline"
+                  target="_blank"
+                  href="https://ai.google.dev/gemini-api/docs/api-key"
+                >
+                  [Gemini API] Get an API key
+                </a>{' '}
+                for more details
+              </span>
+            }
+          >
+            Please provide you Google Vertex API key
+          </ChatBubble>
+        )}
 
         {/* waiting for user to provide repo url */}
         {!pendingForApiKey && (
           <>
-            <ChatBubble isSentByMe>******</ChatBubble>
             <ChatBubble>Please provide Github repo url</ChatBubble>
           </>
         )}
@@ -82,6 +99,7 @@ export const Messages: FC<MessagesProps> = () => {
         {/* waiting for fetch repo source code */}
         {!pendingForApiKey && !pendingForRepo && (
           <>
+            {/* message with link to the repo */}
             <ChatBubble isSentByMe>
               <a
                 href={`https://github.com/${repo?.id}`}
@@ -93,18 +111,22 @@ export const Messages: FC<MessagesProps> = () => {
               </a>
             </ChatBubble>
 
+            {/* fetching source code ... */}
             {pendingForRepoSourceContent && (
-              <ChatBubble>Fetching source code ({format(zipLoadedSize, '-')}) ...</ChatBubble>
+              <ChatBubble>
+                Fetching source code ({formatFileSize(zipLoadedSize, '-')}) ...
+              </ChatBubble>
             )}
 
+            {/* fetching source code failed */}
             {!pendingForRepoSourceContent && sourceContent.error && (
               <ChatBubble bubbleClassName="bg-red-400">{sourceContent.error}</ChatBubble>
             )}
-
             {!pendingForRepoSourceContent && sourceContentTooLarge && (
               <ChatBubble bubbleClassName="bg-red-400">{`Source code is too large (${format(sourceContent!.tokenLength)} tokens)`}</ChatBubble>
             )}
 
+            {/* source code fetched */}
             {!pendingForRepoSourceContent && !sourceContent.error && !sourceContentTooLarge && (
               <ChatBubble footer={`${format(sourceContent!.tokenLength)} tokens`}>
                 Source code fetched
@@ -113,94 +135,111 @@ export const Messages: FC<MessagesProps> = () => {
           </>
         )}
 
-        {!pendingForRepoSourceContent && !sourceContent.error && !sourceContentTooLarge && (
-          <>
-            {/* message templates to start the conversation */}
-            {history.length === 0 && (
-              <>
-                <MessageHint
-                  content="How does it work?"
-                  onClick={() =>
-                    sendMessage('Explain from a high level, how does this project work?')
-                  }
-                />
-              </>
-            )}
+        {!pendingForApiKey &&
+          !pendingForRepoSourceContent &&
+          !sourceContent.error &&
+          !sourceContentTooLarge && (
+            <>
+              {/* message templates to start the conversation */}
+              {history.length === 0 && (
+                <>
+                  <MessageHint
+                    content="How does it work?"
+                    onClick={() =>
+                      sendMessage('Explain from a high level, how does this project work?')
+                    }
+                  />
+                  <MessageHint
+                    content="Write a README"
+                    onClick={() =>
+                      sendMessage(
+                        'Please write a README for this project, highlight key features and main logic from high level.',
+                      )
+                    }
+                  />
+                </>
+              )}
 
-            {/* message items */}
-            {history.length > 0 &&
-              history.map((item, i) => {
-                // normal chat message
-                if ('role' in item) {
-                  if (item.role === 'model' && (i != history.length - 1 || !pendingForResponse)) {
+              {/* message items */}
+              {history.length > 0 &&
+                history.map((item, i) => {
+                  // normal chat message
+                  if ('role' in item) {
+                    if (item.role === 'model' && (i != history.length - 1 || !pendingForResponse)) {
+                      return (
+                        <ChatBubble
+                          key={i}
+                          message={item}
+                          footer={
+                            <div className="flex flex-row gap-1">
+                              <button
+                                className="btn btn-sm btn-square"
+                                onClick={() => deleteMessagePair(i)}
+                              >
+                                🗑️
+                              </button>
+                              <button
+                                className="btn btn-sm btn-square"
+                                onClick={async (e) => {
+                                  try {
+                                    await copyMessagePair(i);
+                                    const el = e.target as HTMLButtonElement;
+                                    el.innerText = '✅';
+                                    setTimeout(() => (el.innerHTML = '📋'), 2000);
+                                  } catch (e) {}
+                                }}
+                              >
+                                📋
+                              </button>
+                            </div>
+                          }
+                        />
+                      );
+                    }
+                    return <ChatBubble key={i} message={item} />;
+                  }
+                  // system note
+                  else {
                     return (
-                      <ChatBubble
+                      <div
                         key={i}
-                        message={item}
-                        footer={
-                          <div className="flex flex-row gap-1">
-                            <button
-                              className="btn btn-sm btn-square"
-                              onClick={() => deleteMessagePair(i)}
-                            >
-                              🗑️
-                            </button>
-                            <button
-                              className="btn btn-sm btn-square"
-                              onClick={async (e) => {
-                                try {
-                                  await copyMessagePair(i);
-                                  const el = e.target as HTMLButtonElement;
-                                  el.innerText = '✅';
-                                  setTimeout(() => (el.innerHTML = '📋'), 2000);
-                                } catch (e) {}
-                              }}
-                            >
-                              📋
-                            </button>
-                          </div>
-                        }
-                      />
+                        role="alert"
+                        className="alert alert-warning text-sm my-1 mx-3 w-auto"
+                        style={{ wordBreak: 'break-word' }}
+                      >
+                        ❗️ {item.content}
+                      </div>
                     );
                   }
-                  return <ChatBubble key={i} message={item} />;
-                }
-                // system note
-                else {
-                  return (
-                    <div
-                      key={i}
-                      role="alert"
-                      className="alert alert-warning text-sm my-1 mx-3 w-auto"
-                    >
-                      ❗️ {item.content}
-                    </div>
-                  );
-                }
-              })}
+                })}
 
-            {/* conversation controls */}
-            {history.length > 0 && !pendingForReply && (
-              <div className="flex flex-row justify-end gap-2 p-2">
-                <button className="btn btn-sm btn-square" onClick={clearHistory}>
-                  ✚
-                </button>
-                <button className="btn btn-sm btn-square" onClick={exportHistory}>
-                  ⬇️
-                </button>
-              </div>
-            )}
+              {/* conversation controls */}
+              {history.length > 0 && !pendingForReply && (
+                <div className="flex flex-row justify-end gap-2 p-2">
+                  <button className="btn btn-sm btn-square" onClick={clearHistory}>
+                    ✚
+                  </button>
+                  <button className="btn btn-sm btn-square" onClick={exportHistory}>
+                    ⬇️
+                  </button>
+                </div>
+              )}
 
-            {pendingForResponse && (
-              <div className="text-center mt-2">
-                <span className="loading loading-dots loading-xs"></span>
-              </div>
-            )}
-          </>
-        )}
+              {pendingForResponse && (
+                <div className="text-center mt-2">
+                  <span className="loading loading-dots loading-xs"></span>
+                </div>
+              )}
+            </>
+          )}
       </div>
 
-      <MessageInput placeholder={inputPlaceholder} disabled={inputDisabled} onEnter={onEnter} />
+      <MessageInput
+        placeholder={inputPlaceholder}
+        isPassword={pendingForApiKey}
+        disabled={inputDisabled}
+        onEnter={onEnter}
+      />
     </>
   );
 };
