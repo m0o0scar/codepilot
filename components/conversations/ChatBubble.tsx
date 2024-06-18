@@ -49,7 +49,7 @@ export const ChatBubble: FC<ChatBubbleProps> = ({
         className={cls(
           'chat-bubble text-sm min-h-5 [&::before]:hidden',
           isSentByMe ? 'chat-bubble-accent' : 'bg-base-200 text-base-content',
-          isError && 'bg-red-400',
+          isError && 'bg-red-500 text-white',
           bubbleClassName,
         )}
         style={{ wordWrap: 'break-word' }}
