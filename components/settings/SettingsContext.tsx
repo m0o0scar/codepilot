@@ -1,4 +1,4 @@
-import { createContext, Dispatch, FC, ReactNode, SetStateAction, useEffect, useState } from 'react';
+import { createContext, FC, ReactNode, useEffect, useState } from 'react';
 
 export interface Settings {
   googleVertexApiKey?: string;
@@ -8,9 +8,7 @@ export interface SettingsContextType {
   settings: Settings;
   setSetting: (key: keyof Settings, value: Settings[keyof Settings]) => void;
 
-  isSettingsModalOpen: boolean;
   openSettingModal: () => void;
-  closeSettingModal: () => void;
 }
 
 export const SettingsContext = createContext<SettingsContextType | null>(null);
@@ -21,9 +19,22 @@ export const SettingsContextProvider: FC<{ children: ReactNode }> = ({ children 
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const openSettingModal = () => setIsSettingsModalOpen(true);
-  const closeSettingModal = () => setIsSettingsModalOpen(false);
+  const openSettingModal = () => {
+    const oldValue = settings.googleVertexApiKey || '';
+    const result = prompt('Enter Google Vertex API key', oldValue);
+
+    // if user clicked cancel, do nothing
+    if (result === null) return;
+
+    // if new value is the same, do nothing
+    const newValue = result.trim();
+    if (newValue === oldValue) return;
+
+    // notify user the change and update the setting
+    if (newValue === '') alert('🗑️ API key removed');
+    else alert('✅ API key updated');
+    setSetting('googleVertexApiKey', newValue);
+  };
 
   useEffect(() => {
     const cached = localStorage.getItem('settings');
@@ -39,9 +50,7 @@ export const SettingsContextProvider: FC<{ children: ReactNode }> = ({ children 
       value={{
         settings,
         setSetting,
-        isSettingsModalOpen,
         openSettingModal,
-        closeSettingModal,
       }}
     >
       {children}
