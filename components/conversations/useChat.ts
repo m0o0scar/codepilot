@@ -129,11 +129,18 @@ ${sourceContent.tree}
 
       const chat = llmContext.model.startChat({
         history: [
+          // system prompt
           { role: 'user', parts: [{ text: systemPrompt }] },
-          ...(history.filter((item) => 'role' in item) as Message[]).map(({ role, content }) => ({
-            role,
-            parts: [{ text: content }],
-          })),
+
+          // history messages
+          ...(history.filter((item) => 'role' in item) as Message[])
+            // keep the last 2 pairs
+            .slice(-2 * 2)
+            // convert to gemini api format
+            .map(({ role, content }) => ({
+              role,
+              parts: [{ text: content }],
+            })),
         ],
         generationConfig: {
           maxOutputTokens: 2000,
