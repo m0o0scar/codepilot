@@ -17,7 +17,7 @@ export const MessageInput: FC<MessageInputProps> = ({ placeholder, disabled, onE
   };
 
   return (
-    <div className="fixed left-0 right-0 bottom-0 flex flex-row gap-2 p-2 bg-base-100">
+    <div className="fixed left-0 right-0 bottom-0 flex flex-row gap-2 p-2 bg-base-100 border-t">
       <label className="input flex items-center gap-2 grow">
         <input
           type="text"

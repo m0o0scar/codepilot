@@ -16,7 +16,8 @@ export const Messages: FC<MessagesProps> = () => {
 
   const { repo, setRepo, sourceContent, zipLoadedSize } = useGithubRepo();
 
-  const { history, pendingForReply, pendingForResponse, sendMessage } = useChat(sourceContent);
+  const { history, pendingForReply, pendingForResponse, sendMessage, clearHistory, exportHistory } =
+    useChat(sourceContent);
 
   const pendingForApiKey = !settingsContext?.settings.googleVertexApiKey;
   const pendingForRepo = !repo;
@@ -134,6 +135,17 @@ export const Messages: FC<MessagesProps> = () => {
                   );
                 }
               })}
+
+            {history.length > 0 && !pendingForReply && (
+              <div className="flex flex-row justify-end gap-2 p-2">
+                <button className="btn btn-sm btn-square" onClick={clearHistory}>
+                  ✚
+                </button>
+                <button className="btn btn-sm btn-square" onClick={exportHistory}>
+                  ⬇️
+                </button>
+              </div>
+            )}
 
             {pendingForResponse && (
               <div className="text-center mt-2">

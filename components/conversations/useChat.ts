@@ -4,6 +4,7 @@ import { useContext, useEffect, useState } from 'react';
 import { GithubRepoContent } from '@components/github/types';
 import { LLMContext } from '@components/llm/LLMContext';
 import { Message } from '@components/llm/types';
+import { format } from '@utils/number';
 import { get, put } from '@utils/storage';
 
 export interface SystemNote {
@@ -27,8 +28,8 @@ export const useChat = (sourceContent?: GithubRepoContent) => {
     }
   };
 
-  const save = async () => {
-    if (sourceContent) await put(`repo-chat-${sourceContent.id.id}`, history);
+  const save = async (value: History[] | undefined) => {
+    if (sourceContent) await put(`repo-chat-${sourceContent.id.id}`, value || history);
   };
 
   const addUserMessage = (content: string) =>
@@ -59,6 +60,49 @@ export const useChat = (sourceContent?: GithubRepoContent) => {
       }
       return prev;
     });
+  };
+
+  const clearHistory = () => {
+    setHistory([]);
+    save([]);
+  };
+
+  const exportHistory = () => {
+    const messages = (history.filter((item) => 'role' in item) as Message[]).map(
+      ({ role, content }) => {
+        if (role === 'user') return `### ${content}`;
+        return `${content}\n\n---`;
+      },
+    );
+
+    if (sourceContent && history.length) {
+      // compose the content
+      const exportContent = `# ${sourceContent.id.id}
+
+## 💬 Conversation
+
+---
+
+${messages.join('\n\n')}
+
+## 📖 Source Code
+
+- Repo: https://github.com/${sourceContent.id.id}
+- Souce code token length: ${format(sourceContent.tokenLength)}
+
+\`\`\`
+${sourceContent.tree}
+\`\`\``;
+
+      // trigger download
+      const blob = new Blob([exportContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.download = `${sourceContent.id.id}.md`;
+      a.href = url;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   };
 
   const sendMessage = async (content: string) => {
@@ -120,5 +164,7 @@ export const useChat = (sourceContent?: GithubRepoContent) => {
     pendingForResponse,
     pendingForReply,
     sendMessage,
+    clearHistory,
+    exportHistory,
   };
 };
