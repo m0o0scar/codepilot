@@ -11,8 +11,9 @@ export const MessageInput: FC<MessageInputProps> = ({ placeholder, disabled, onE
   const [value, setValue] = useState('');
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      onEnter?.(value.trim());
+    const trimmed = value.trim();
+    if (e.key === 'Enter' && trimmed) {
+      onEnter?.(trimmed);
       setValue('');
     }
   };
