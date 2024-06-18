@@ -28,7 +28,7 @@ export const useChat = (sourceContent?: GithubRepoContent) => {
     }
   };
 
-  const save = async (value: History[] | undefined) => {
+  const save = async (value?: History[]) => {
     if (sourceContent) await put(`repo-chat-${sourceContent.id.id}`, value || history);
   };
 
