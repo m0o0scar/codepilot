@@ -40,7 +40,7 @@ export const Messages: FC<MessagesProps> = () => {
 
   let inputPlaceholder: string | undefined = undefined;
   if (pendingForApiKey) inputPlaceholder = 'Google Vertex API key';
-  if (pendingForRepo) inputPlaceholder = 'Github repo url';
+  else if (pendingForRepo) inputPlaceholder = 'Github repo url';
 
   let inputDisabled = false;
   if (
