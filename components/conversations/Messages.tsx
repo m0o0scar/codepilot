@@ -120,15 +120,23 @@ export const Messages: FC<MessagesProps> = () => {
 
             {/* fetching source code failed */}
             {!pendingForRepoSourceContent && sourceContent.error && (
-              <ChatBubble bubbleClassName="bg-red-400">{sourceContent.error}</ChatBubble>
+              <ChatBubble isError>{sourceContent.error}</ChatBubble>
             )}
             {!pendingForRepoSourceContent && sourceContentTooLarge && (
-              <ChatBubble bubbleClassName="bg-red-400">{`Source code is too large (${format(sourceContent!.tokenLength)} tokens)`}</ChatBubble>
+              <ChatBubble
+                isError
+              >{`Source code is too large (${format(sourceContent!.tokenLength)} tokens)`}</ChatBubble>
             )}
 
             {/* source code fetched */}
             {!pendingForRepoSourceContent && !sourceContent.error && !sourceContentTooLarge && (
-              <ChatBubble footer={`${format(sourceContent!.tokenLength)} tokens`}>
+              <ChatBubble
+                footer={
+                  <div className="badge badge-ghost badge-sm">
+                    {format(sourceContent!.tokenLength)} tokens
+                  </div>
+                }
+              >
                 Source code fetched
               </ChatBubble>
             )}
@@ -165,15 +173,21 @@ export const Messages: FC<MessagesProps> = () => {
                 history.map((item, i) => {
                   // normal chat message
                   if ('role' in item) {
-                    const showButtons =
+                    const showFooter =
                       item.role === 'model' && (i != history.length - 1 || !pendingForReply);
                     return (
                       <ChatBubble
                         key={i}
                         message={item}
                         footer={
-                          showButtons && (
-                            <div className="flex flex-row gap-1">
+                          showFooter && (
+                            <div className="flex flex-row gap-1 items-center">
+                              {item.usage && (
+                                <div className="badge badge-ghost badge-sm min-h-8 px-3">
+                                  ⬆️ {format(item.usage.promptTokens)} / ⬇️{' '}
+                                  {format(item.usage.completionTokens)} tokens
+                                </div>
+                              )}
                               <button
                                 className="btn btn-sm btn-square"
                                 onClick={() => deleteMessagePair(i)}

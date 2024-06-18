@@ -35,17 +35,17 @@ export const useChat = (sourceContent?: GithubRepoContent) => {
   const addUserMessage = (content: string) =>
     setHistory((prev) => [...prev, { role: 'user', content }]);
 
-  const setLastModelMessage = (content: string) => {
+  const setLastModelMessage = (content: string, usage?: Message['usage']) => {
     setHistory((prev) => {
       const lastItem = last(prev);
       const isModelMessage = lastItem && 'role' in lastItem && lastItem.role === 'model';
 
       if (!prev.length || !isModelMessage) {
         // add a new model message
-        return [...prev, { role: 'model', content }];
+        return [...prev, { role: 'model', content, usage }];
       } else {
         // update the content of last model message
-        return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content } : m));
+        return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content, usage } : m));
       }
     });
   };
@@ -154,10 +154,18 @@ ${sourceContent.tree}
         let acc = '';
 
         for await (const chunk of result.stream) {
+          let usage: Message['usage'] | undefined;
+          if (chunk.usageMetadata) {
+            const { promptTokenCount: promptTokens, candidatesTokenCount: completionTokens } =
+              chunk.usageMetadata;
+            usage = { promptTokens, completionTokens };
+          }
+
           const text = chunk.text();
           acc += text;
+          setLastModelMessage(acc, usage);
+
           setPendingForResponse(false);
-          setLastModelMessage(acc);
         }
       } catch (error) {
         deleteLastMessagePair();
