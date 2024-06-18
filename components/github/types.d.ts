@@ -125,4 +125,6 @@ export interface GithubRepoContent {
 
   sourceVersion: string | number;
   schemaVersion: number;
+
+  error?: string;
 }

@@ -11,13 +11,14 @@ export const Markdown: FC<{ content?: string }> = ({ content }) => {
     <ReactMarkdown
       // eslint-disable-next-line react/no-children-prop
       children={content}
+      className="prose prose-sm max-w-full"
       remarkPlugins={[remarkGfm]}
       components={{
         code(props) {
           const { children, className, node, ref, ...rest } = props;
           const match = /language-(\w+)/.exec(className || '');
           return match && match[1] !== 'mermaid' ? (
-            <div className="syntax-highlighter not-prose text-xs">
+            <div className="not-prose text-xs mx-[-12px] my-[-14px]">
               <SyntaxHighlighter
                 {...rest}
                 // eslint-disable-next-line react/no-children-prop

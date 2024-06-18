@@ -1,6 +1,5 @@
 import '../styles/globals.css';
 
-import { GithubRepoContextProvider } from '@components/github/GithubRepoContext';
 import { LLMContextProvider } from '@components/llm/LLMContext';
 import { SettingsContextProvider } from '@components/settings/SettingsContext';
 
@@ -11,9 +10,7 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
     <div className="font-sans">
       <SettingsContextProvider>
         <LLMContextProvider>
-          <GithubRepoContextProvider>
-            <Component {...pageProps} />
-          </GithubRepoContextProvider>
+          <Component {...pageProps} />
         </LLMContextProvider>
       </SettingsContextProvider>
     </div>

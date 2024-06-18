@@ -1,4 +1,4 @@
-import { createContext, FC, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, FC, ReactNode, useContext, useEffect, useState } from 'react';
 
 import { SettingsContext } from '@components/settings/SettingsContext';
 import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';

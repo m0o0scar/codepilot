@@ -1,10 +1,11 @@
 import { last } from 'lodash';
 // @ts-ignore
 import prettyTree from 'pretty-file-tree';
-import { createContext, FC, ReactNode, useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 
 import { LLMContext } from '@components/llm/LLMContext';
 import { fetchWithProgress } from '@utils/fetch';
+import { formatFileSize } from '@utils/number';
 import { del, get, put } from '@utils/storage';
 import { BlobReader, BlobWriter, ZipReader } from '@zip.js/zip.js';
 
@@ -12,19 +13,7 @@ import { GithubRepo, GithubRepoContent } from './types';
 
 const SOURCE_SCHEMA_VERSION = 2;
 
-export interface GithubRepoContextType {
-  repo?: GithubRepo;
-  setRepo: (source: string) => void;
-
-  zipLoadedSize: number;
-  sourceContent?: GithubRepoContent;
-}
-
-export const GithubRepoContext = createContext<GithubRepoContextType | null>(null);
-
-export const GithubRepoContextProvider: FC<{
-  children: ReactNode;
-}> = ({ children }) => {
+export const useGithubRepo = () => {
   const llmContext = useContext(LLMContext);
 
   const [repo, setRepo] = useState<GithubRepo | undefined>();
@@ -56,9 +45,19 @@ export const GithubRepoContextProvider: FC<{
     if (!repo || !llmContext?.model) return;
 
     // get repo info like default branch, etc.
-    const { default_branch: branchName, pushed_at: lastPushTime } = await fetch(
+    const { default_branch: branchName = 'master', pushed_at: lastPushTime = '' } = await fetch(
       `https://api.github.com/repos/${repo.id}`,
     ).then((resp) => resp.json());
+
+    const placeholder: GithubRepoContent = {
+      id: repo,
+      tree: '',
+      files: {},
+      content: '',
+      tokenLength: 0,
+      schemaVersion: SOURCE_SCHEMA_VERSION,
+      sourceVersion: lastPushTime,
+    };
 
     // check if cached content is outdated
     const key = `repo-content-${repo.id}`;
@@ -76,6 +75,17 @@ export const GithubRepoContextProvider: FC<{
       const zipUrl = `https://github.com/${repo.id}/archive/refs/heads/${branchName}.zip`;
       const proxyUrl = `/api/proxy?dest=${encodeURIComponent(zipUrl)}`;
       const blob = await fetchWithProgress(proxyUrl, setZipLoadedSize);
+
+      // check if the zip file is too large, max = 100MB
+      if (blob.size > 100 * 1024 * 1024) {
+        const content = {
+          ...placeholder,
+          error: `The zip file is too large (${formatFileSize(blob.size)}), maximum is 100MB.`,
+        };
+        put(key, content);
+        setSourceContent(content);
+        return;
+      }
 
       // unzip the file
       const reader = new BlobReader(blob);
@@ -129,8 +139,16 @@ export const GithubRepoContextProvider: FC<{
       // calculate token length and cost based on all combined source code
       const sourceCode = contents.map(({ block }) => block).join('\n\n');
 
-      const { totalTokens } = await llmContext.model.countTokens(sourceCode);
-      const tokenLength = totalTokens;
+      let tokenLength = 0;
+      try {
+        const { totalTokens } = await llmContext.model.countTokens(sourceCode);
+        tokenLength = totalTokens;
+      } catch (error) {
+        const content = { ...placeholder, error: String(error) };
+        put(key, content);
+        setSourceContent(content);
+        return;
+      }
 
       // create directory tree
       const filePaths = contents.map((e) => e.filename);
@@ -144,19 +162,15 @@ export const GithubRepoContextProvider: FC<{
         .filter(Boolean)
         .join('\n\n');
 
-      const sourceContent: GithubRepoContent = {
-        id: repo,
+      const sourceContent = {
+        ...placeholder,
         tree,
         files: filesMap,
         content: concatted,
         tokenLength,
-        sourceVersion: lastPushTime,
-        schemaVersion: SOURCE_SCHEMA_VERSION,
       };
 
-      // store result in cache
       put(key, sourceContent);
-
       setSourceContent(sourceContent);
     }
   };
@@ -174,11 +188,10 @@ export const GithubRepoContextProvider: FC<{
     }
   }, [repo, llmContext?.model]);
 
-  return (
-    <GithubRepoContext.Provider
-      value={{ repo, setRepo: setRepoFromSource, zipLoadedSize, sourceContent }}
-    >
-      {children}
-    </GithubRepoContext.Provider>
-  );
+  return {
+    repo,
+    setRepo: setRepoFromSource,
+    zipLoadedSize,
+    sourceContent,
+  };
 };
