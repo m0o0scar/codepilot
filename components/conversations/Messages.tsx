@@ -1,4 +1,4 @@
-import { FC, useContext } from 'react';
+import { FC, Fragment, useContext } from 'react';
 
 import { useGithubRepo } from '@components/github/useGithubRepo';
 import { SettingsContext } from '@components/settings/SettingsContext';
@@ -7,6 +7,10 @@ import { format, formatFileSize } from '@utils/number';
 import { ChatBubble } from './ChatBubble';
 import { MessageHint } from './MessageHint';
 import { MessageInput } from './MessageInput';
+import { ChatMessage } from './messages/ChatMessages';
+import { PleaseProvideAPIKeyMessage } from './messages/GeminiMessages';
+import { GithubRepoMessage, GithubRepoSourceFetchedMessage } from './messages/GithubRepoMessages';
+import { SystemMessage } from './messages/SystemMessages';
 import { useChat } from './useChat';
 
 export interface MessagesProps {}
@@ -69,25 +73,7 @@ export const Messages: FC<MessagesProps> = () => {
     <>
       <div className="flex flex-col mb-16 w-full md:max-w-5xl md:mx-auto">
         {/* waiting for user to provide API key */}
-        {pendingForApiKey && (
-          <ChatBubble
-            footer={
-              <span>
-                See{' '}
-                <a
-                  className="underline"
-                  target="_blank"
-                  href="https://ai.google.dev/gemini-api/docs/api-key"
-                >
-                  [Gemini API] Get an API key
-                </a>{' '}
-                for more details
-              </span>
-            }
-          >
-            Please provide you Google Vertex API key
-          </ChatBubble>
-        )}
+        {pendingForApiKey && <PleaseProvideAPIKeyMessage />}
 
         {/* waiting for user to provide repo url */}
         {!pendingForApiKey && (
@@ -100,16 +86,7 @@ export const Messages: FC<MessagesProps> = () => {
         {!pendingForApiKey && !pendingForRepo && (
           <>
             {/* message with link to the repo */}
-            <ChatBubble isSentByMe>
-              <a
-                href={`https://github.com/${repo?.id}`}
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
-                {repo?.id} ↗️
-              </a>
-            </ChatBubble>
+            <GithubRepoMessage repo={repo} />
 
             {/* fetching source code ... */}
             {pendingForRepoSourceContent && (
@@ -130,15 +107,7 @@ export const Messages: FC<MessagesProps> = () => {
 
             {/* source code fetched */}
             {!pendingForRepoSourceContent && !sourceContent.error && !sourceContentTooLarge && (
-              <ChatBubble
-                footer={
-                  <div className="badge badge-ghost badge-sm">
-                    {format(sourceContent!.tokenLength)} tokens
-                  </div>
-                }
-              >
-                Source code fetched
-              </ChatBubble>
+              <GithubRepoSourceFetchedMessage sourceContent={sourceContent} />
             )}
           </>
         )}
@@ -176,55 +145,18 @@ export const Messages: FC<MessagesProps> = () => {
                     const showFooter =
                       item.role === 'model' && (i != history.length - 1 || !pendingForReply);
                     return (
-                      <ChatBubble
+                      <ChatMessage
                         key={i}
                         message={item}
-                        footer={
-                          showFooter && (
-                            <div className="flex flex-row gap-1 items-center">
-                              {item.usage && (
-                                <div className="badge badge-ghost badge-sm min-h-8 px-3">
-                                  ⬆️ {format(item.usage.promptTokens)} / ⬇️{' '}
-                                  {format(item.usage.completionTokens)} tokens
-                                </div>
-                              )}
-                              <button
-                                className="btn btn-sm btn-square"
-                                onClick={() => deleteMessagePair(i)}
-                              >
-                                🗑️
-                              </button>
-                              <button
-                                className="btn btn-sm btn-square"
-                                onClick={async (e) => {
-                                  try {
-                                    await copyMessagePair(i);
-                                    const el = e.target as HTMLButtonElement;
-                                    el.innerText = '✅';
-                                    setTimeout(() => (el.innerHTML = '📋'), 2000);
-                                  } catch (e) {}
-                                }}
-                              >
-                                📋
-                              </button>
-                            </div>
-                          )
-                        }
+                        showFooter={showFooter}
+                        onDelete={() => deleteMessagePair(i)}
+                        onCopy={() => copyMessagePair(i)}
                       />
                     );
                   }
                   // system note
                   else {
-                    return (
-                      <div
-                        key={i}
-                        role="alert"
-                        className="alert alert-warning text-sm my-1 mx-3 w-auto"
-                        style={{ wordBreak: 'break-word' }}
-                      >
-                        ❗️ {item.content}
-                      </div>
-                    );
+                    return <SystemMessage key={i} message={item} />;
                   }
                 })}
 
@@ -241,7 +173,7 @@ export const Messages: FC<MessagesProps> = () => {
               )}
 
               {pendingForResponse && (
-                <div className="text-center mt-2">
+                <div className="text-center my-2">
                   <span className="loading loading-dots loading-xs"></span>
                 </div>
               )}

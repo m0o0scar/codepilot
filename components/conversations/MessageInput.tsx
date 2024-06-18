@@ -1,3 +1,4 @@
+import cls from 'classnames';
 import { FC, useState } from 'react';
 
 export interface MessageInputProps {
@@ -23,7 +24,12 @@ export const MessageInput: FC<MessageInputProps> = ({
   };
 
   return (
-    <div className="fixed left-0 right-0 bottom-0 flex flex-row gap-2 p-2 bg-base-100 border-t border-t-base-300">
+    <div
+      className={cls(
+        'fixed left-0 right-0 bottom-0 flex flex-row gap-2 p-2 border-t border-t-base-300',
+        disabled ? 'bg-base-200' : 'bg-base-100',
+      )}
+    >
       <label className="input flex items-center gap-2 grow">
         <input
           type={isPassword ? 'password' : 'text'}
