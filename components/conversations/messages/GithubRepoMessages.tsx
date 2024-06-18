@@ -30,7 +30,7 @@ export const GithubRepoSourceFetchedMessage: FC<{ sourceContent?: GithubRepoCont
     <ChatBubble
       footer={
         <div className="badge badge-ghost badge-sm">
-          {format(sourceContent!.tokenLength)} tokens
+          {format(sourceContent!.tokenLength)} tokens / {format(sourceContent.numberOfLines)} lines
         </div>
       }
     >

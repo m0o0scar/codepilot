@@ -11,7 +11,7 @@ import { BlobReader, BlobWriter, ZipReader } from '@zip.js/zip.js';
 
 import { GithubRepo, GithubRepoContent } from './types';
 
-const SOURCE_SCHEMA_VERSION = 2;
+const SOURCE_SCHEMA_VERSION = 3;
 
 export const useGithubRepo = () => {
   const llmContext = useContext(LLMContext);
@@ -55,6 +55,7 @@ export const useGithubRepo = () => {
       files: {},
       content: '',
       tokenLength: 0,
+      numberOfLines: 0,
       schemaVersion: SOURCE_SCHEMA_VERSION,
       sourceVersion: lastPushTime,
     };
@@ -123,6 +124,7 @@ export const useGithubRepo = () => {
     });
 
     // read file content
+    let numberOfLines = 0;
     const rootFolderNamePattern = new RegExp(`^${repo.name}-${branchName}\/`);
     const filesMap: { [filename: string]: string } = {};
     const contents = await Promise.all(
@@ -132,6 +134,12 @@ export const useGithubRepo = () => {
         const response = await fetch(url);
         const text = await response.text();
         URL.revokeObjectURL(url);
+
+        const lines = text
+          .split('\n')
+          .map((l) => l.trim())
+          .filter(Boolean);
+        numberOfLines += lines.length;
 
         const filename = e.filename.replace(rootFolderNamePattern, 'root/');
         filesMap[filename] = text;
@@ -171,6 +179,7 @@ export const useGithubRepo = () => {
       files: filesMap,
       content: concatted,
       tokenLength,
+      numberOfLines,
     };
 
     put(key, sourceContent);

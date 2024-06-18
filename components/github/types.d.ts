@@ -122,6 +122,7 @@ export interface GithubRepoContent {
 
   content: string;
   tokenLength: number;
+  numberOfLines: number;
 
   sourceVersion: string | number;
   schemaVersion: number;
