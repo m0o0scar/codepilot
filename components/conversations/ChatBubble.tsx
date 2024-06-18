@@ -8,6 +8,8 @@ import { Message } from '../llm/types';
 interface ChatBubblePropsBase {
   isSentByMe?: boolean;
   className?: string;
+  header?: ReactNode;
+  footer?: ReactNode;
 }
 
 interface ChatBubblePropsWithMessage extends ChatBubblePropsBase {
@@ -20,7 +22,7 @@ interface ChatBubblePropsWithCustomContent extends ChatBubblePropsBase {
 
 export type ChatBubbleProps = ChatBubblePropsWithMessage | ChatBubblePropsWithCustomContent;
 
-export const ChatBubble: FC<ChatBubbleProps> = ({ className, ...props }) => {
+export const ChatBubble: FC<ChatBubbleProps> = ({ className, header, footer, ...props }) => {
   const isSentByMe = props.isSentByMe || ('message' in props && props.message.role === 'user');
 
   const hasCustomContent = 'children' in props;
@@ -28,6 +30,7 @@ export const ChatBubble: FC<ChatBubbleProps> = ({ className, ...props }) => {
 
   return (
     <div className={cls('chat', { 'chat-start': !isSentByMe, 'chat-end': isSentByMe }, className)}>
+      {header && <div className="chat-header">{header}</div>}
       <div
         className={cls(
           'chat-bubble text-sm min-h-5 [&::before]:hidden',
@@ -41,6 +44,7 @@ export const ChatBubble: FC<ChatBubbleProps> = ({ className, ...props }) => {
         {/* TODO: support markdown */}
         {!isSentByMe && !hasCustomContent && <Markdown content={content as string} />}
       </div>
+      {footer && <div className="chat-footer opacity-50 text-xs">{footer}</div>}
     </div>
   );
 };
