@@ -3,17 +3,13 @@ import { createContext, FC, ReactNode, useCallback, useContext, useEffect, useSt
 import { SettingsContext } from '@components/settings/SettingsContext';
 import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
 
-import { Message, Usage } from './types';
-
 export interface LLMContextType {
   model: GenerativeModel | null;
 }
 
 export const LLMContext = createContext<LLMContextType | null>(null);
 
-export const LLMContextProvider: FC<{ children: (model: GenerativeModel | null) => ReactNode }> = ({
-  children,
-}) => {
+export const LLMContextProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const settingsContext = useContext(SettingsContext);
 
   const [model, setModel] = useState<GenerativeModel | null>(null);
@@ -29,5 +25,5 @@ export const LLMContextProvider: FC<{ children: (model: GenerativeModel | null) 
     }
   }, [settingsContext?.settings.googleVertexApiKey]);
 
-  return <LLMContext.Provider value={{ model }}>{children(model)}</LLMContext.Provider>;
+  return <LLMContext.Provider value={{ model }}>{children}</LLMContext.Provider>;
 };

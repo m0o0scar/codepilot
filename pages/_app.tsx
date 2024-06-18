@@ -11,11 +11,9 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
     <div className="font-sans">
       <SettingsContextProvider>
         <LLMContextProvider>
-          {(model) => (
-            <GithubRepoContextProvider model={model}>
-              <Component {...pageProps} />
-            </GithubRepoContextProvider>
-          )}
+          <GithubRepoContextProvider>
+            <Component {...pageProps} />
+          </GithubRepoContextProvider>
         </LLMContextProvider>
       </SettingsContextProvider>
     </div>

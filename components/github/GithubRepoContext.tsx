@@ -1,9 +1,9 @@
 import { last } from 'lodash';
 // @ts-ignore
 import prettyTree from 'pretty-file-tree';
-import { createContext, FC, ReactNode, useEffect, useState } from 'react';
+import { createContext, FC, ReactNode, useContext, useEffect, useState } from 'react';
 
-import { GenerativeModel } from '@google/generative-ai';
+import { LLMContext } from '@components/llm/LLMContext';
 import { fetchWithProgress } from '@utils/fetch';
 import { del, get, put } from '@utils/storage';
 import { BlobReader, BlobWriter, ZipReader } from '@zip.js/zip.js';
@@ -23,9 +23,10 @@ export interface GithubRepoContextType {
 export const GithubRepoContext = createContext<GithubRepoContextType | null>(null);
 
 export const GithubRepoContextProvider: FC<{
-  model: GenerativeModel | null;
   children: ReactNode;
-}> = ({ model, children }) => {
+}> = ({ children }) => {
+  const llmContext = useContext(LLMContext);
+
   const [repo, setRepo] = useState<GithubRepo | undefined>();
 
   const [zipLoadedSize, setZipLoadedSize] = useState(0);
@@ -52,7 +53,7 @@ export const GithubRepoContextProvider: FC<{
     setZipLoadedSize(0);
     setSourceContent(undefined);
 
-    if (!repo || !model) return;
+    if (!repo || !llmContext?.model) return;
 
     // get repo info like default branch, etc.
     const { default_branch: branchName, pushed_at: lastPushTime } = await fetch(
@@ -128,7 +129,7 @@ export const GithubRepoContextProvider: FC<{
       // calculate token length and cost based on all combined source code
       const sourceCode = contents.map(({ block }) => block).join('\n\n');
 
-      const { totalTokens } = await model.countTokens(sourceCode);
+      const { totalTokens } = await llmContext.model.countTokens(sourceCode);
       const tokenLength = totalTokens;
 
       // create directory tree
@@ -168,8 +169,10 @@ export const GithubRepoContextProvider: FC<{
   }, []);
 
   useEffect(() => {
-    if (repo && model) fetchRepoContent();
-  }, [repo, model]);
+    if (repo && llmContext?.model) {
+      fetchRepoContent();
+    }
+  }, [repo, llmContext?.model]);
 
   return (
     <GithubRepoContext.Provider
