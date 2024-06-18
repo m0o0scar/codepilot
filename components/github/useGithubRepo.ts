@@ -45,9 +45,9 @@ export const useGithubRepo = () => {
     if (!repo || !llmContext?.model) return;
 
     // get repo info like default branch, etc.
-    const { default_branch: branchName = 'master', pushed_at: lastPushTime = '' } = await fetch(
-      `https://api.github.com/repos/${repo.id}`,
-    ).then((resp) => resp.json());
+    const repoInfoResponse = await fetch(`https://api.github.com/repos/${repo.id}`);
+    const { default_branch: branchName = 'master', pushed_at: lastPushTime = '' } =
+      await repoInfoResponse.json();
 
     const placeholder: GithubRepoContent = {
       id: repo,
@@ -59,6 +59,14 @@ export const useGithubRepo = () => {
       sourceVersion: lastPushTime,
     };
 
+    if (repoInfoResponse.status === 404) {
+      setSourceContent({
+        ...placeholder,
+        error: 'Repo not found, is the url correct or is it a private repo?',
+      });
+      return;
+    }
+
     // check if cached content is outdated
     const key = `repo-content-${repo.id}`;
     const cachedSourceContent = await get<GithubRepoContent>(key);
@@ -67,112 +75,106 @@ export const useGithubRepo = () => {
       cachedSourceContent.sourceVersion === lastPushTime
     ) {
       setSourceContent(cachedSourceContent);
-    } else {
-      // if cached content is outdated, delete it
-      del(key);
-
-      // construct the url to download the zip file
-      const zipUrl = `https://github.com/${repo.id}/archive/refs/heads/${branchName}.zip`;
-      const proxyUrl = `/api/proxy?dest=${encodeURIComponent(zipUrl)}`;
-      const blob = await fetchWithProgress(proxyUrl, setZipLoadedSize);
-
-      // check if the zip file is too large, max = 100MB
-      if (blob.size > 100 * 1024 * 1024) {
-        const content = {
-          ...placeholder,
-          error: `The zip file is too large (${formatFileSize(blob.size)}), maximum is 100MB.`,
-        };
-        put(key, content);
-        setSourceContent(content);
-        return;
-      }
-
-      // unzip the file
-      const reader = new BlobReader(blob);
-      const zipReader = new ZipReader(reader);
-      const entries = await zipReader.getEntries();
-
-      // keep only source code files and markdowns
-      const files = entries.filter((e) => {
-        if (e.directory) return false;
-
-        // include files with these extensions
-        const ext = last(e.filename.split('.')) || '';
-        if (!['md', 'js', 'mjs', 'jsx', 'ts', 'tsx', 'css', 'html', 'json', 'py'].includes(ext))
-          return false;
-
-        // ignore these files:
-        // - package-lock.json
-        // - .eslintrc.json
-        // - .d.ts
-        // - .github/
-        // - tests/
-        if (
-          e.filename.match(/(package-lock\.json$|\.eslintrc\.json$|\.d\.ts$|\.github\/|\/tests\/)/)
-        )
-          return false;
-
-        return true;
-      });
-
-      // read file content
-      const rootFolderNamePattern = new RegExp(`^${repo.name}-${branchName}\/`);
-      const filesMap: { [filename: string]: string } = {};
-      const contents = await Promise.all(
-        files.map(async (e) => {
-          const blob = await e.getData!(new BlobWriter());
-          const url = URL.createObjectURL(blob);
-          const response = await fetch(url);
-          const text = await response.text();
-          URL.revokeObjectURL(url);
-
-          const filename = e.filename.replace(rootFolderNamePattern, 'root/');
-          filesMap[filename] = text;
-
-          const ext = last(e.filename.split('.')) || '';
-          const block = `${e.filename}:\n\n\`\`\`${ext}\n${text}\n\`\`\``;
-
-          return { filename, content: text, block };
-        }),
-      );
-
-      // calculate token length and cost based on all combined source code
-      const sourceCode = contents.map(({ block }) => block).join('\n\n');
-
-      let tokenLength = 0;
-      try {
-        const { totalTokens } = await llmContext.model.countTokens(sourceCode);
-        tokenLength = totalTokens;
-      } catch (error) {
-        const content = { ...placeholder, error: String(error) };
-        put(key, content);
-        setSourceContent(content);
-        return;
-      }
-
-      // create directory tree
-      const filePaths = contents.map((e) => e.filename);
-      const tree = prettyTree(filePaths);
-
-      const concatted = [
-        `Project: ${repo.id}`,
-        `Source tree:\n\n\`\`\`\n${tree}\n\`\`\``,
-        sourceCode,
-      ]
-        .filter(Boolean)
-        .join('\n\n');
-
-      const sourceContent = {
-        ...placeholder,
-        tree,
-        files: filesMap,
-        content: concatted,
-        tokenLength,
-      };
-
-      put(key, sourceContent);
-      setSourceContent(sourceContent);
+      return;
     }
+    // if cached content is outdated, delete it
+    del(key);
+
+    // construct the url to download the zip file
+    const zipUrl = `https://github.com/${repo.id}/archive/refs/heads/${branchName}.zip`;
+    const proxyUrl = `/api/proxy?dest=${encodeURIComponent(zipUrl)}`;
+    const blob = await fetchWithProgress(proxyUrl, setZipLoadedSize);
+
+    // check if the zip file is too large, max = 100MB
+    if (blob.size > 100 * 1024 * 1024) {
+      const content = {
+        ...placeholder,
+        error: `The zip file is too large (${formatFileSize(blob.size)}), maximum is 100MB.`,
+      };
+      put(key, content);
+      setSourceContent(content);
+      return;
+    }
+
+    // unzip the file
+    const reader = new BlobReader(blob);
+    const zipReader = new ZipReader(reader);
+    const entries = await zipReader.getEntries();
+
+    // keep only source code files and markdowns
+    const files = entries.filter((e) => {
+      if (e.directory) return false;
+
+      // include files with these extensions
+      const ext = last(e.filename.split('.')) || '';
+      if (!['md', 'js', 'mjs', 'jsx', 'ts', 'tsx', 'css', 'html', 'json', 'py'].includes(ext))
+        return false;
+
+      // ignore these files:
+      // - package-lock.json
+      // - .eslintrc.json
+      // - .d.ts
+      // - .github/
+      // - tests/
+      if (e.filename.match(/(package-lock\.json$|\.eslintrc\.json$|\.d\.ts$|\.github\/|\/tests\/)/))
+        return false;
+
+      return true;
+    });
+
+    // read file content
+    const rootFolderNamePattern = new RegExp(`^${repo.name}-${branchName}\/`);
+    const filesMap: { [filename: string]: string } = {};
+    const contents = await Promise.all(
+      files.map(async (e) => {
+        const blob = await e.getData!(new BlobWriter());
+        const url = URL.createObjectURL(blob);
+        const response = await fetch(url);
+        const text = await response.text();
+        URL.revokeObjectURL(url);
+
+        const filename = e.filename.replace(rootFolderNamePattern, 'root/');
+        filesMap[filename] = text;
+
+        const ext = last(e.filename.split('.')) || '';
+        const block = `${e.filename}:\n\n\`\`\`${ext}\n${text}\n\`\`\``;
+
+        return { filename, content: text, block };
+      }),
+    );
+
+    // calculate token length and cost based on all combined source code
+    const sourceCode = contents.map(({ block }) => block).join('\n\n');
+
+    let tokenLength = 0;
+    try {
+      const { totalTokens } = await llmContext.model.countTokens(sourceCode);
+      tokenLength = totalTokens;
+    } catch (error) {
+      const content = { ...placeholder, error: String(error) };
+      put(key, content);
+      setSourceContent(content);
+      return;
+    }
+
+    // create directory tree
+    const filePaths = contents.map((e) => e.filename);
+    const tree = prettyTree(filePaths);
+
+    const concatted = [`Project: ${repo.id}`, `Source tree:\n\n\`\`\`\n${tree}\n\`\`\``, sourceCode]
+      .filter(Boolean)
+      .join('\n\n');
+
+    const sourceContent = {
+      ...placeholder,
+      tree,
+      files: filesMap,
+      content: concatted,
+      tokenLength,
+    };
+
+    put(key, sourceContent);
+    setSourceContent(sourceContent);
   };
 
   useEffect(() => {
