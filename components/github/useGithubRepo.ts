@@ -12,7 +12,7 @@ import { BlobReader, BlobWriter, ZipReader } from '@zip.js/zip.js';
 
 import { GithubRepo, GithubRepoContent } from './types';
 
-const SOURCE_SCHEMA_VERSION = 3;
+const SOURCE_SCHEMA_VERSION = 4;
 
 export const useGithubRepo = () => {
   const settingsContext = useContext(SettingsContext);
@@ -174,7 +174,12 @@ export const useGithubRepo = () => {
     const filePaths = contents.map((e) => e.filename);
     const tree = prettyTree(filePaths);
 
-    const concatted = [`Project: ${repo.id}`, `Source tree:\n\n\`\`\`\n${tree}\n\`\`\``, sourceCode]
+    const concatted = [
+      `Project: ${repo.id}`,
+      `Branch: ${branchName}`,
+      `Source tree:\n\n\`\`\`\n${tree}\n\`\`\``,
+      sourceCode,
+    ]
       .filter(Boolean)
       .join('\n\n');
 

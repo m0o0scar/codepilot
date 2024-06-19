@@ -2,6 +2,7 @@ import { FC } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow as style } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import rehypeExternalLinks from 'rehype-external-links';
 import remarkGfm from 'remark-gfm';
 
 export const Markdown: FC<{ content?: string }> = ({ content }) => {
@@ -13,6 +14,7 @@ export const Markdown: FC<{ content?: string }> = ({ content }) => {
       children={content}
       className="prose prose-sm max-w-full"
       remarkPlugins={[remarkGfm]}
+      rehypePlugins={[[rehypeExternalLinks, { target: '_blank' }]]}
       components={{
         code(props) {
           const { children, className, node, ref, ...rest } = props;

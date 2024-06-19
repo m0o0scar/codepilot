@@ -125,7 +125,7 @@ ${sourceContent.tree}
 
       addUserMessage(content);
 
-      const systemPrompt = `You are Code Pilot. The following are source code of a project, please read the code carefully, then answer my question in accurate and concise manner. If it's necessary to include code in your reply, make sure only to include the bare minimal most relevant code snippets, NEVER include code of a whole file.\n\n${sourceContent.content}`;
+      const systemPrompt = `You are Code Pilot. The following are the source code files of a project. Please read the code carefully and answer my questions accurately and concisely. Always cite the relevant source code file (for example: [\`<file name>\`](https://github.com/<owner>/<repo>/blob/<branch>/<file path>)) and quote relevant code snippets in your reply to support your answer.\n\n${sourceContent.content}`;
 
       const chat = llmContext.model.startChat({
         history: [
