@@ -1,4 +1,5 @@
 import { createContext, FC, ReactNode, useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 
 export interface Settings {
   googleVertexApiKey?: string;
@@ -8,7 +9,9 @@ export interface SettingsContextType {
   settings: Settings;
   setSetting: (key: keyof Settings, value: Settings[keyof Settings]) => void;
 
+  isSettingModalOpen: boolean;
   openSettingModal: () => void;
+  closeSettingModal: () => void;
 }
 
 export const SettingsContext = createContext<SettingsContextType | null>(null);
@@ -19,22 +22,9 @@ export const SettingsContextProvider: FC<{ children: ReactNode }> = ({ children 
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
-  const openSettingModal = () => {
-    const oldValue = settings.googleVertexApiKey || '';
-    const result = prompt('Enter Google Vertex API key', oldValue);
-
-    // if user clicked cancel, do nothing
-    if (result === null) return;
-
-    // if new value is the same, do nothing
-    const newValue = result.trim();
-    if (newValue === oldValue) return;
-
-    // notify user the change and update the setting
-    if (newValue === '') alert('🗑️ API key removed');
-    else alert('✅ API key updated');
-    setSetting('googleVertexApiKey', newValue);
-  };
+  const [isSettingModalOpen, setIsSettingModalOpen] = useState(false);
+  const openSettingModal = () => setIsSettingModalOpen(true);
+  const closeSettingModal = () => setIsSettingModalOpen(false);
 
   useEffect(() => {
     const cached = localStorage.getItem('settings');
@@ -50,7 +40,9 @@ export const SettingsContextProvider: FC<{ children: ReactNode }> = ({ children 
       value={{
         settings,
         setSetting,
+        isSettingModalOpen,
         openSettingModal,
+        closeSettingModal,
       }}
     >
       {children}

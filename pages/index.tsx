@@ -1,6 +1,7 @@
 import { Header } from '@components/commons/Header';
 import { Navbar } from '@components/commons/Navbar';
 import { Messages } from '@components/conversations/Messages';
+import { SettingsModal } from '@components/settings/SettingsModal';
 
 export default function Page() {
   return (
@@ -11,6 +12,8 @@ export default function Page() {
         <Navbar />
         <Messages />
       </div>
+
+      <SettingsModal />
     </>
   );
 }
