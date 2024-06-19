@@ -6,7 +6,7 @@ export const Navbar = () => {
   };
 
   return (
-    <div className="navbar bg-base-100 px-0 pt-0 min-h-[auto]">
+    <div className="navbar bg-base-100 min-h-[auto]">
       <div className="flex-1">
         <a className="btn btn-ghost text-xl" onClick={goHome}>
           💻👨‍✈️ Code Pilot
