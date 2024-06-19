@@ -30,9 +30,11 @@ export const useGithubRepo = () => {
       const url = new URL(source);
       const [_, owner, name] = url.pathname.split('/');
       setRepo({ owner, name, id: `${owner}/${name}` });
+      return true;
     }
-    // others
-    else setRepo(undefined);
+
+    setRepo(undefined);
+    return false;
   };
 
   const fetchRepoContent = async () => {

@@ -1,4 +1,5 @@
-import { FC, Fragment, useContext } from 'react';
+import { FC, useContext } from 'react';
+import { toast } from 'react-toastify';
 
 import { useGithubRepo } from '@components/github/useGithubRepo';
 import { SettingsContext } from '@components/settings/SettingsContext';
@@ -54,7 +55,9 @@ export const Messages: FC<MessagesProps> = () => {
 
   const onEnter = async (message: string) => {
     if (pendingForRepo) {
-      setRepo(message);
+      if (!setRepo(message)) {
+        toast.error('Invalid Github repo url');
+      }
     } else {
       sendMessage(message);
 
