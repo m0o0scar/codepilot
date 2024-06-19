@@ -1,4 +1,5 @@
 import { FC } from 'react';
+import { toast } from 'react-toastify';
 
 import { Message } from '@components/llm/types';
 import { format } from '@utils/number';
@@ -34,10 +35,10 @@ export const ChatMessage: FC<ChatMessageProps> = ({ message, showFooter, onDelet
                 if (!onCopy) return;
                 try {
                   await onCopy();
-                  const el = e.target as HTMLButtonElement;
-                  el.innerText = '✅';
-                  setTimeout(() => (el.innerHTML = '📋'), 2000);
-                } catch (e) {}
+                  toast.success(`Message copied`);
+                } catch (e) {
+                  toast.error(`Failed to copy message: ${String(e)}`);
+                }
               }}
             >
               📋
