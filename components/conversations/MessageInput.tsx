@@ -35,6 +35,11 @@ export const MessageInput: FC<MessageInputProps> = ({ placeholder, disabled, onE
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={onKeyDown}
         />
+        {value && (
+          <button className="btn btn-xs btn-circle" onClick={() => setValue('')}>
+            ⛌
+          </button>
+        )}
         <kbd className="kbd kbd-sm">↵</kbd>
       </label>
     </div>
