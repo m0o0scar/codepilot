@@ -29,11 +29,6 @@ export const useGithubRepo = () => {
       const [_, owner, name] = url.pathname.split('/');
       setRepo({ owner, name, id: `${owner}/${name}` });
     }
-    // for non-url
-    else if (!source.startsWith('https://')) {
-      const [owner, name] = source.split('/');
-      setRepo({ owner, name, id: `${owner}/${name}` });
-    }
     // others
     else setRepo(undefined);
   };
