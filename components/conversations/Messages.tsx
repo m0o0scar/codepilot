@@ -16,7 +16,7 @@ import { useChat } from './useChat';
 export interface MessagesProps {}
 
 export const Messages: FC<MessagesProps> = () => {
-  const settingsContext = useContext(SettingsContext);
+  const { pendingForApiKeys } = useContext(SettingsContext) || {};
 
   const { repo, setRepo, sourceContent, zipLoadedSize } = useGithubRepo();
 
@@ -31,7 +31,7 @@ export const Messages: FC<MessagesProps> = () => {
     deleteMessagePair,
   } = useChat(sourceContent);
 
-  const pendingForApiKey = !settingsContext?.settings.googleVertexApiKey;
+  const pendingForApiKey = pendingForApiKeys;
   const pendingForRepo = !repo;
   const pendingForRepoSourceContent = !sourceContent;
 
@@ -44,6 +44,7 @@ export const Messages: FC<MessagesProps> = () => {
 
   let inputDisabled = false;
   if (
+    pendingForApiKey ||
     (!pendingForApiKey && !pendingForRepo && pendingForRepoSourceContent) ||
     sourceContent?.error ||
     sourceContentTooLarge ||
@@ -52,12 +53,8 @@ export const Messages: FC<MessagesProps> = () => {
     inputDisabled = true;
 
   const onEnter = async (message: string) => {
-    if (pendingForApiKey) {
-      settingsContext?.setSetting('googleVertexApiKey', message);
-    } else if (pendingForRepo) {
+    if (pendingForRepo) {
       setRepo(message);
-    } else if (pendingForRepoSourceContent) {
-      // do nothing
     } else {
       sendMessage(message);
 
