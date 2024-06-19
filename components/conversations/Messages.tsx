@@ -17,7 +17,7 @@ import { useChat } from './useChat';
 export interface MessagesProps {}
 
 export const Messages: FC<MessagesProps> = () => {
-  const { pendingForApiKeys } = useContext(SettingsContext) || {};
+  const { pendingForApiKeys, settings } = useContext(SettingsContext) || {};
 
   const { repo, setRepo, sourceContent, zipLoadedSize } = useGithubRepo();
 
@@ -28,7 +28,7 @@ export const Messages: FC<MessagesProps> = () => {
     sendMessage,
     clearHistory,
     exportHistory,
-    copyMessagePair,
+    getMessagePair,
     deleteMessagePair,
   } = useChat(sourceContent);
 
@@ -67,6 +67,22 @@ export const Messages: FC<MessagesProps> = () => {
         doc.scrollTo({ top: doc.scrollHeight, behavior: 'smooth' });
       }, 200);
     }
+  };
+
+  const saveAsMarkdown = () => {
+    if (!sourceContent) return;
+
+    const { content } = exportHistory() || {};
+    if (!content) return;
+
+    // trigger download
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.download = `${sourceContent.id.id}.md`;
+    a.href = url;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -150,7 +166,7 @@ export const Messages: FC<MessagesProps> = () => {
                         message={item}
                         showFooter={showFooter}
                         onDelete={() => deleteMessagePair(i)}
-                        onCopy={() => copyMessagePair(i)}
+                        onGetMessagePair={() => getMessagePair(i)}
                       />
                     );
                   }
@@ -163,10 +179,13 @@ export const Messages: FC<MessagesProps> = () => {
               {/* conversation controls */}
               {history.length > 0 && !pendingForReply && (
                 <div className="flex flex-row justify-end gap-2 p-2">
+                  {/* new conversation button */}
                   <button className="btn btn-sm btn-square" onClick={clearHistory}>
                     ✚
                   </button>
-                  <button className="btn btn-sm btn-square" onClick={exportHistory}>
+
+                  {/* download as markdown button */}
+                  <button className="btn btn-sm btn-square" onClick={saveAsMarkdown}>
                     ⬇️
                   </button>
                 </div>

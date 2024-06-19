@@ -71,51 +71,34 @@ export const useChat = (sourceContent?: GithubRepoContent) => {
     setHistory((prev) => prev.filter((_, index) => index !== i && index !== i - 1));
   };
 
-  const copyMessagePair = async (i: number) => {
-    const modelMessage = history[i];
-    const userMessage = history[i - 1];
-    if (modelMessage && userMessage) {
-      const content = `## ${userMessage.content}\n\n${modelMessage.content}`;
-      await navigator.clipboard.writeText(content);
-    }
+  const getMessagePair = (i: number) => {
+    return [history[i - 1], history[i]] as Message[];
   };
 
   const exportHistory = () => {
     const messages = (history.filter((item) => 'role' in item) as Message[]).map(
       ({ role, content }) => {
-        if (role === 'user') return `### ${content}`;
-        return `${content}\n\n---`;
+        if (role === 'user') return `---\n\n### ${content}`;
+        return `${content}`;
       },
     );
 
-    if (sourceContent && history.length) {
+    if (sourceContent && messages.length) {
       // compose the content
       const exportContent = `# ${sourceContent.id.id}
-
-## 💬 Conversation
-
----
-
-${messages.join('\n\n')}
 
 ## 📖 Source Code
 
 - Repo: https://github.com/${sourceContent.id.id}
-- Souce code token length: ${format(sourceContent.tokenLength)}
+- Souce code: ${format(sourceContent.tokenLength)} tokens
 
-\`\`\`
-${sourceContent.tree}
-\`\`\``;
+## 💬 Conversation
 
-      // trigger download
-      const blob = new Blob([exportContent], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.download = `${sourceContent.id.id}.md`;
-      a.href = url;
-      a.click();
-      URL.revokeObjectURL(url);
+${messages.join('\n\n')}`;
+
+      return { messages, content: exportContent };
     }
+    return null;
   };
 
   const sendMessage = async (content: string) => {
@@ -193,7 +176,7 @@ ${sourceContent.tree}
     pendingForReply,
     clearHistory,
     deleteMessagePair,
-    copyMessagePair,
+    getMessagePair,
     sendMessage,
     exportHistory,
   };
