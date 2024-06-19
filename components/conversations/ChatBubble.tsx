@@ -47,9 +47,16 @@ export const ChatBubble: FC<ChatBubbleProps> = ({
       {header && <div className="chat-header">{header}</div>}
       <div
         className={cls(
+          // basic style, hide bubble tail
           'chat-bubble text-sm min-h-5 [&::before]:hidden',
+
+          // different color based on who send the message
           isSentByMe ? 'chat-bubble-accent' : 'bg-base-200 text-base-content',
+
+          // error style
           isError && 'bg-red-500 text-white',
+
+          // custom style
           bubbleClassName,
         )}
         style={{ wordWrap: 'break-word' }}

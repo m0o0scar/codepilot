@@ -4,6 +4,7 @@ import prettyTree from 'pretty-file-tree';
 import { useContext, useEffect, useState } from 'react';
 
 import { LLMContext } from '@components/llm/LLMContext';
+import { SettingsContext } from '@components/settings/SettingsContext';
 import { fetchWithProgress } from '@utils/fetch';
 import { formatFileSize } from '@utils/number';
 import { del, get, put } from '@utils/storage';
@@ -14,6 +15,7 @@ import { GithubRepo, GithubRepoContent } from './types';
 const SOURCE_SCHEMA_VERSION = 3;
 
 export const useGithubRepo = () => {
+  const settingsContext = useContext(SettingsContext);
   const llmContext = useContext(LLMContext);
 
   const [repo, setRepo] = useState<GithubRepo | undefined>();
@@ -28,19 +30,27 @@ export const useGithubRepo = () => {
       const url = new URL(source);
       const [_, owner, name] = url.pathname.split('/');
       setRepo({ owner, name, id: `${owner}/${name}` });
+      return true;
     }
-    // others
-    else setRepo(undefined);
+
+    setRepo(undefined);
+    return false;
   };
 
   const fetchRepoContent = async () => {
     setZipLoadedSize(0);
     setSourceContent(undefined);
 
-    if (!repo || !llmContext?.model) return;
+    const { githubClientId, githubClientSecret } = settingsContext?.settings || {};
+    if (!repo || !llmContext?.model || !githubClientId || !githubClientSecret) return;
 
     // get repo info like default branch, etc.
-    const repoInfoResponse = await fetch(`https://api.github.com/repos/${repo.id}`);
+    const repoInfoResponse = await fetch(`https://api.github.com/repos/${repo.id}`, {
+      headers: {
+        // send github client id and secret as basic auth to prevent rate limiting
+        Authorization: `Basic ${btoa(`${githubClientId}:${githubClientSecret}`)}`,
+      },
+    });
     const { default_branch: branchName = 'master', pushed_at: lastPushTime = '' } =
       await repoInfoResponse.json();
 
@@ -187,6 +197,12 @@ export const useGithubRepo = () => {
     const source = searchParams.get('source');
     if (source) setRepoFromSource(source);
   }, []);
+
+  useEffect(() => {
+    if (repo) {
+      history.pushState('', '', `?source=${encodeURIComponent(`https://github.com/${repo.id}`)}`);
+    }
+  }, [repo]);
 
   useEffect(() => {
     if (repo && llmContext?.model) {
