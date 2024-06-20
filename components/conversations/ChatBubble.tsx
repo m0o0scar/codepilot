@@ -48,7 +48,7 @@ export const ChatBubble: FC<ChatBubbleProps> = ({
       <div
         className={cls(
           // basic style, hide bubble tail
-          'chat-bubble text-sm min-h-5 w-auto max-w-[97%] md:max-w-[90%] [&::before]:hidden',
+          'chat-bubble text-sm min-h-5 w-auto md:!max-w-[90%] [&::before]:hidden',
 
           // different color based on who send the message
           isSentByMe ? 'chat-bubble-accent' : 'bg-base-200 text-base-content',
@@ -59,7 +59,7 @@ export const ChatBubble: FC<ChatBubbleProps> = ({
           // custom style
           bubbleClassName,
         )}
-        style={{ wordWrap: 'break-word' }}
+        style={{ wordWrap: 'break-word', maxWidth: 'calc(100% - 10px)' }}
       >
         {/* message sent by me, render as text */}
         {(isSentByMe || hasCustomContent) && content}
