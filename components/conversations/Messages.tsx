@@ -147,7 +147,7 @@ export const Messages: FC<MessagesProps> = () => {
         {/* waiting for user to provide repo url */}
         {!pendingForApiKeys && (
           <>
-            <ChatBubble>Please provide Github repo url</ChatBubble>
+            <ChatBubble>Please provide Github repo url or import markdown file</ChatBubble>
           </>
         )}
 
