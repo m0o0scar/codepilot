@@ -18,7 +18,7 @@ import { useChat } from './useChat';
 export interface MessagesProps {}
 
 export const Messages: FC<MessagesProps> = () => {
-  const { repo, setRepo, sourceContent, zipLoadedSize } = useGithubRepo();
+  const { repo, url, setUrl, sourceContent, zipLoadedSize } = useGithubRepo();
 
   const [importedMessages, setImportedMessages] = useState<Message[] | undefined>();
 
@@ -34,6 +34,7 @@ export const Messages: FC<MessagesProps> = () => {
   } = useChat(sourceContent, importedMessages);
 
   const { pendingForApiKeys } = useContext(SettingsContext) || {};
+  const fetchingRepoInfo = url && !repo;
   const pendingForRepo = !repo;
   const pendingForRepoSourceContent = !sourceContent;
 
@@ -58,7 +59,7 @@ export const Messages: FC<MessagesProps> = () => {
 
   const onEnter = async (message: string) => {
     if (pendingForRepo) {
-      if (!setRepo(message)) {
+      if (!setUrl(message)) {
         toast.error('Invalid Github repo url');
       }
     } else {
@@ -130,8 +131,9 @@ export const Messages: FC<MessagesProps> = () => {
         })
         .flat();
 
-      if (sourceUrl) setRepo(sourceUrl);
-      if (messages.length) setImportedMessages(messages);
+      if (setUrl(sourceUrl)) {
+        if (messages.length) setImportedMessages(messages);
+      }
     };
     input.click();
   };
@@ -243,14 +245,14 @@ export const Messages: FC<MessagesProps> = () => {
                   </>
                 )}
               </div>
-
-              {pendingForResponse && (
-                <div className="text-center my-2">
-                  <span className="loading loading-dots loading-xs"></span>
-                </div>
-              )}
             </>
           )}
+
+        {(fetchingRepoInfo || pendingForResponse) && (
+          <div className="text-center my-2">
+            <span className="loading loading-dots loading-xs"></span>
+          </div>
+        )}
       </div>
 
       <MessageInput

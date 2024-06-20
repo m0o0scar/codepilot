@@ -1,23 +1,27 @@
+/* eslint-disable @next/next/no-img-element */
 import { FC } from 'react';
 
-import { GithubRepo, GithubRepoContent } from '@components/github/types';
+import { GithubRepoContent, GithubRepoInfo } from '@components/github/types';
 import { format } from '@utils/number';
 
 import { ChatBubble } from '../ChatBubble';
 
-export const GithubRepoMessage: FC<{ repo?: GithubRepo }> = ({ repo }) => {
+export const GithubRepoMessage: FC<{ repo?: GithubRepoInfo }> = ({ repo }) => {
   if (!repo) return null;
 
   return (
     <ChatBubble isSentByMe>
-      <a
-        href={`https://github.com/${repo?.id}`}
-        target="_blank"
-        rel="noreferrer"
-        className="underline"
-      >
-        {repo?.id} ↗️
-      </a>
+      <div className="flex flex-row gap-1">
+        <img className="w-5 rounded" src={repo.owner.avatar_url} alt={repo.owner.login} />
+        <a
+          href={`https://github.com/${repo.full_name}`}
+          target="_blank"
+          rel="noreferrer"
+          className="underline"
+        >
+          {repo.full_name} ↗️
+        </a>
+      </div>
     </ChatBubble>
   );
 };

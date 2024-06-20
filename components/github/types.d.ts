@@ -1,9 +1,3 @@
-export interface GithubRepo {
-  owner: string;
-  name: string;
-  id: string;
-}
-
 export interface GithubRepoInfo {
   id: number;
   node_id: string;

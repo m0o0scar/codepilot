@@ -10,7 +10,7 @@ import { formatFileSize } from '@utils/number';
 import { del, get, put } from '@utils/storage';
 import { BlobReader, BlobWriter, ZipReader } from '@zip.js/zip.js';
 
-import { GithubRepo, GithubRepoContent } from './types';
+import { GithubRepoContent, GithubRepoInfo } from './types';
 
 const SOURCE_SCHEMA_VERSION = 4;
 
@@ -18,51 +18,50 @@ export const useGithubRepo = () => {
   const settingsContext = useContext(SettingsContext);
   const llmContext = useContext(LLMContext);
 
-  const [repo, setRepo] = useState<GithubRepo | undefined>();
+  const [url, _setUrl] = useState<string | undefined>();
+  const setUrl = (url?: string) => {
+    if (url && url.startsWith('https://github.com/')) {
+      _setUrl(url);
+      return true;
+    }
+    return false;
+  };
+
+  const [repo, setRepo] = useState<GithubRepoInfo | undefined>();
 
   const [zipLoadedSize, setZipLoadedSize] = useState(0);
 
   const [sourceContent, setSourceContent] = useState<GithubRepoContent | undefined>();
-
-  const setRepoFromSource = (source: string) => {
-    // for github.com url
-    if (source.startsWith('https://github.com/')) {
-      const url = new URL(source);
-      const [_, owner, name] = url.pathname.split('/');
-      setRepo({ owner, name, id: `${owner}/${name}` });
-      return true;
-    }
-
-    setRepo(undefined);
-    return false;
-  };
 
   const fetchRepoContent = async () => {
     setZipLoadedSize(0);
     setSourceContent(undefined);
 
     const { githubClientId, githubClientSecret } = settingsContext?.settings || {};
-    if (!repo || !llmContext?.model || !githubClientId || !githubClientSecret) return;
+    if (!url || !llmContext?.model || !githubClientId || !githubClientSecret) return;
+
+    const [_, owner, name] = new URL(url).pathname.split('/');
 
     // get repo info like default branch, etc.
-    const repoInfoResponse = await fetch(`https://api.github.com/repos/${repo.id}`, {
+    const repoInfoResponse = await fetch(`https://api.github.com/repos/${owner}/${name}`, {
       headers: {
         // send github client id and secret as basic auth to prevent rate limiting
         Authorization: `Basic ${btoa(`${githubClientId}:${githubClientSecret}`)}`,
       },
     });
-    const { default_branch: branchName = 'master', pushed_at: lastPushTime = '' } =
-      await repoInfoResponse.json();
+
+    const info = (await repoInfoResponse.json()) as GithubRepoInfo;
+    setRepo(info);
 
     const placeholder: GithubRepoContent = {
-      id: repo,
+      id: info.full_name,
       tree: '',
       files: {},
       content: '',
       tokenLength: 0,
       numberOfLines: 0,
       schemaVersion: SOURCE_SCHEMA_VERSION,
-      sourceVersion: lastPushTime,
+      sourceVersion: info.pushed_at,
     };
 
     if (repoInfoResponse.status === 404) {
@@ -74,11 +73,11 @@ export const useGithubRepo = () => {
     }
 
     // check if cached content is outdated
-    const key = `repo-content-${repo.id}`;
+    const key = `repo-content-${info.full_name}`;
     const cachedSourceContent = await get<GithubRepoContent>(key);
     if (
       cachedSourceContent?.schemaVersion === SOURCE_SCHEMA_VERSION &&
-      cachedSourceContent.sourceVersion === lastPushTime
+      cachedSourceContent.sourceVersion === info.pushed_at
     ) {
       setSourceContent(cachedSourceContent);
       return;
@@ -87,7 +86,7 @@ export const useGithubRepo = () => {
     del(key);
 
     // construct the url to download the zip file
-    const zipUrl = `https://github.com/${repo.id}/archive/refs/heads/${branchName}.zip`;
+    const zipUrl = `https://github.com/${info.full_name}/archive/refs/heads/${info.default_branch}.zip`;
     const proxyUrl = `/api/proxy?dest=${encodeURIComponent(zipUrl)}`;
     const blob = await fetchWithProgress(proxyUrl, setZipLoadedSize);
 
@@ -130,7 +129,7 @@ export const useGithubRepo = () => {
 
     // read file content
     let numberOfLines = 0;
-    const rootFolderNamePattern = new RegExp(`^${repo.name}-${branchName}\/`);
+    const rootFolderNamePattern = new RegExp(`^${info.name}-${info.default_branch}\/`);
     const filesMap: { [filename: string]: string } = {};
     const contents = await Promise.all(
       files.map(async (e) => {
@@ -175,8 +174,8 @@ export const useGithubRepo = () => {
     const tree = prettyTree(filePaths);
 
     const concatted = [
-      `Project: ${repo.id}`,
-      `Branch: ${branchName}`,
+      `Project: ${info.full_name}`,
+      `Branch: ${info.default_branch}`,
       `Source tree:\n\n\`\`\`\n${tree}\n\`\`\``,
       sourceCode,
     ]
@@ -200,18 +199,20 @@ export const useGithubRepo = () => {
     // get source from url search query
     const searchParams = new URLSearchParams(window.location.search);
     const source = searchParams.get('source');
-    if (source) setRepoFromSource(source);
+    if (source) setUrl(source);
   }, []);
 
   useEffect(() => {
-    if (repo && llmContext?.model) {
+    if (url && llmContext?.model) {
+      setRepo(undefined);
       fetchRepoContent();
     }
-  }, [repo, llmContext?.model]);
+  }, [url, llmContext?.model]);
 
   return {
     repo,
-    setRepo: setRepoFromSource,
+    url,
+    setUrl,
     zipLoadedSize,
     sourceContent,
   };
