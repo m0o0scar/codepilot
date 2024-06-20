@@ -40,26 +40,23 @@ export const ChatBubble: FC<ChatBubbleProps> = ({
   const content = 'children' in props ? props.children : props.message.content;
 
   return (
-    <div
-      className={cls('chat', { 'chat-start': !isSentByMe, 'chat-end': isSentByMe }, className)}
-      onClick={onClick}
-    >
+    <div className={cls('chat', { 'chat-start': !isSentByMe, 'chat-end': isSentByMe }, className)}>
       {header && <div className="chat-header">{header}</div>}
       <div
         className={cls(
           // basic style, hide bubble tail
           'chat-bubble text-sm min-h-5 w-auto md:!max-w-[90%] [&::before]:hidden',
+          { 'cursor-pointer': onClick },
 
-          // different color based on who send the message
+          // different color based on who send the message and whether there is error
           isSentByMe ? 'chat-bubble-accent' : 'bg-base-200 text-base-content',
-
-          // error style
           isError && 'bg-red-500 text-white',
 
           // custom style
           bubbleClassName,
         )}
         style={{ wordWrap: 'break-word', maxWidth: 'calc(100% - 10px)' }}
+        onClick={onClick}
       >
         {/* message sent by me, render as text */}
         {(isSentByMe || hasCustomContent) && content}

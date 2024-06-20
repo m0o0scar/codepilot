@@ -11,7 +11,7 @@ export const MessageHint: FC<MessageHintProps> = ({ content, onClick }) => {
   return (
     <ChatBubble
       isSentByMe
-      bubbleClassName="bg-gray-200 dark:bg-gray-700 text-black dark:text-white cursor-pointer"
+      bubbleClassName="bg-gray-200 dark:bg-gray-700 text-black dark:text-white"
       onClick={onClick}
     >
       👉 {content}
