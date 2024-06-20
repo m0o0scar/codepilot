@@ -1,35 +1,50 @@
 import cls from 'classnames';
-import { useContext, useEffect, useState } from 'react';
+import { useContext } from 'react';
 
 import { SettingsContext } from './SettingsContext';
-import { SettingsModalInput } from './SettingsModalInput';
+import { SettingsModalInput, useSettingsInputValue } from './SettingsModalInput';
+
+const GeminiApiKeyInputFooter = () => (
+  <>
+    <div>This is for accessing Google Gemini API.</div>
+    <div>
+      See{' '}
+      <a className="underline" target="_blank" href="https://ai.google.dev/gemini-api/docs/api-key">
+        Get an API key
+      </a>{' '}
+      for more details.
+    </div>
+  </>
+);
+
+const GithubCredentialsFooter = () => (
+  <>
+    <div>For preventing rate limit when fetching Github repo.</div>
+    <div>
+      Go to{' '}
+      <a className="underline" target="_blank" href="https://github.com/settings/developers">
+        Github OAuth Apps
+      </a>{' '}
+      to create an app and obtain the client id & secret.
+    </div>
+  </>
+);
 
 export const SettingsModal = () => {
   const settingsContext = useContext(SettingsContext);
 
-  const [googleVertexApiKey, setGoogleVertexApiKey] = useState('');
-  const [githubClientId, setGithubClientId] = useState('');
-  const [githubClientSecret, setGithubClientSecret] = useState('');
-
-  const {
-    googleVertexApiKey: googleVertexApiKeyOld = '',
-    githubClientId: githubClientIdOld = '',
-    githubClientSecret: githubClientSecretOld = '',
-  } = settingsContext?.settings || {};
-  const googleVertexApiKeyNew = googleVertexApiKey.trim();
-  const githubClientIdNew = githubClientId.trim();
-  const githubClientSecretNew = githubClientSecret.trim();
+  const geminiApiKey = useSettingsInputValue('googleVertexApiKey');
+  const githubClientId = useSettingsInputValue('githubClientId');
+  const githubClientSecret = useSettingsInputValue('githubClientSecret');
 
   const canSave =
-    googleVertexApiKeyOld !== googleVertexApiKeyNew ||
-    githubClientIdOld !== githubClientIdNew ||
-    githubClientSecretOld !== githubClientSecretNew;
+    geminiApiKey.hasChanges || githubClientId.hasChanges || githubClientSecret.hasChanges;
 
   const onSave = () => {
     settingsContext?.setSettings({
-      googleVertexApiKey: googleVertexApiKeyNew,
-      githubClientId: githubClientIdNew,
-      githubClientSecret: githubClientSecretNew,
+      googleVertexApiKey: geminiApiKey.trimmed,
+      githubClientId: githubClientId.trimmed,
+      githubClientSecret: githubClientSecret.trimmed,
     });
     settingsContext?.closeSettingModal();
   };
@@ -40,36 +55,27 @@ export const SettingsModal = () => {
       .split('\n')
       .map((l) => l.trim())
       .filter(Boolean);
+
     for (const line of lines) {
       const [key, value] = line.split('=');
       switch (key.toLowerCase()) {
         case 'google_vertex_api_key':
-          setGoogleVertexApiKey(value);
+          geminiApiKey.onChange(value);
           break;
+
         case 'github_client_id':
-          setGithubClientId(value);
+          githubClientId.onChange(value);
           break;
+
         case 'github_client_secret':
-          setGithubClientSecret(value);
+          githubClientSecret.onChange(value);
           break;
+
         default:
           break;
       }
     }
   };
-
-  useEffect(() => {
-    if (settingsContext?.isSettingModalOpen) {
-      const {
-        googleVertexApiKey = '',
-        githubClientId = '',
-        githubClientSecret = '',
-      } = settingsContext.settings || {};
-      setGoogleVertexApiKey(googleVertexApiKey);
-      setGithubClientId(githubClientId);
-      setGithubClientSecret(githubClientSecret);
-    }
-  }, [settingsContext?.isSettingModalOpen]);
 
   return (
     <dialog className={cls('modal', { 'modal-open': settingsContext?.isSettingModalOpen })}>
@@ -84,49 +90,16 @@ export const SettingsModal = () => {
               <p className="my-2 font-bold">Google Gemini</p>
               <SettingsModalInput
                 label="API key"
-                value={googleVertexApiKey}
-                onChange={setGoogleVertexApiKey}
-                type="password"
-                footer={
-                  <span>
-                    See{' '}
-                    <a
-                      className="underline"
-                      target="_blank"
-                      href="https://ai.google.dev/gemini-api/docs/api-key"
-                    >
-                      Gemini API - Get an API key
-                    </a>{' '}
-                    for more details
-                  </span>
-                }
+                hook={geminiApiKey}
+                footer={<GeminiApiKeyInputFooter />}
               />
 
               <p className="my-2 font-bold">Github</p>
-              <SettingsModalInput
-                label="Client ID"
-                type="password"
-                value={githubClientId}
-                onChange={setGithubClientId}
-              />
+              <SettingsModalInput label="Client ID" hook={githubClientId} />
               <SettingsModalInput
                 label="Client Secret"
-                type="password"
-                value={githubClientSecret}
-                onChange={setGithubClientSecret}
-                footer={
-                  <span>
-                    Go to{' '}
-                    <a
-                      className="underline"
-                      target="_blank"
-                      href="https://github.com/settings/developers"
-                    >
-                      Github OAuth Apps
-                    </a>{' '}
-                    to create an app and obtain the client id & secret
-                  </span>
-                }
+                hook={githubClientSecret}
+                footer={<GithubCredentialsFooter />}
               />
             </div>
           </>

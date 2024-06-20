@@ -1,8 +1,30 @@
-import { FC, HTMLInputTypeAttribute, ReactNode, useState } from 'react';
+import { FC, HTMLInputTypeAttribute, ReactNode, useContext, useEffect, useState } from 'react';
+
+import { SettingsContext, SettingsContextType } from './SettingsContext';
+
+export const useSettingsInputValue = (key: keyof SettingsContextType['settings']) => {
+  const context = useContext(SettingsContext);
+
+  const [value, setValue] = useState('');
+  const [trimmed, setTrimmed] = useState('');
+  const [hasChanges, setHasChanges] = useState(false);
+
+  useEffect(() => setValue(context?.settings[key] || ''), [context?.isSettingModalOpen]);
+
+  useEffect(() => setTrimmed(value.trim()), [value]);
+
+  useEffect(() => setHasChanges((context?.settings[key] || '') !== trimmed), [trimmed]);
+
+  return {
+    value,
+    onChange: setValue,
+    trimmed,
+    hasChanges,
+  };
+};
 
 export interface SettingsModalInputProps {
-  value?: string;
-  onChange?: (value: string) => void;
+  hook: ReturnType<typeof useSettingsInputValue>;
   type?: HTMLInputTypeAttribute;
   placeholder?: string;
   error?: string;
@@ -13,13 +35,12 @@ export interface SettingsModalInputProps {
 
 export const SettingsModalInput: FC<SettingsModalInputProps> = ({
   label,
-  value,
-  onChange,
-  type = 'text',
+  type = 'password',
   placeholder,
   error,
   disabled,
   footer,
+  hook,
 }) => {
   const [focused, setFocused] = useState(false);
 
@@ -32,8 +53,8 @@ export const SettingsModalInput: FC<SettingsModalInputProps> = ({
           disabled={disabled}
           type={focused ? 'text' : type}
           placeholder={placeholder}
-          value={value}
-          onChange={(e) => onChange?.(e.target.value)}
+          value={hook.value}
+          onChange={(e) => hook.onChange?.(e.target.value)}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
         />
