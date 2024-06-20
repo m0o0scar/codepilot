@@ -80,7 +80,7 @@ export const Messages: FC<MessagesProps> = () => {
     const { content } = exportHistory() || {};
     if (!content) return;
 
-    const filename = `[Code Pilot] ${sourceContent.id}.md`;
+    const filename = `[Code Pilot] ${repo!.name}.md`;
 
     // share as markdown file in share sheet
     if (isIOS && navigator.share) {
