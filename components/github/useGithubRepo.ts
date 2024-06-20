@@ -204,12 +204,6 @@ export const useGithubRepo = () => {
   }, []);
 
   useEffect(() => {
-    if (repo) {
-      history.pushState('', '', `?source=${encodeURIComponent(`https://github.com/${repo.id}`)}`);
-    }
-  }, [repo]);
-
-  useEffect(() => {
     if (repo && llmContext?.model) {
       fetchRepoContent();
     }

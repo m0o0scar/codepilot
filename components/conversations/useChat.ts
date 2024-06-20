@@ -1,5 +1,5 @@
 import { last } from 'lodash';
-import { useContext, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useContext, useEffect, useState } from 'react';
 
 import { GithubRepoContent } from '@components/github/types';
 import { LLMContext } from '@components/llm/LLMContext';
@@ -13,24 +13,13 @@ export interface SystemNote {
 
 export type History = Message | SystemNote;
 
-export const useChat = (sourceContent?: GithubRepoContent) => {
+export const useChat = (sourceContent?: GithubRepoContent, importedMessages?: Message[]) => {
   const llmContext = useContext(LLMContext);
 
   const [pendingForResponse, setPendingForResponse] = useState(false);
   const [pendingForReply, setPendingForReply] = useState(false);
 
   const [history, setHistory] = useState<History[]>([]);
-
-  const load = async () => {
-    if (sourceContent) {
-      const cached = await get<History[]>(`repo-chat-${sourceContent.id.id}`);
-      setHistory(cached || []);
-    }
-  };
-
-  const save = async (value?: History[]) => {
-    if (sourceContent) await put(`repo-chat-${sourceContent.id.id}`, value || history);
-  };
 
   const addUserMessage = (content: string) =>
     setHistory((prev) => [...prev, { role: 'user', content }]);
@@ -54,7 +43,6 @@ export const useChat = (sourceContent?: GithubRepoContent) => {
 
   const clearHistory = () => {
     setHistory([]);
-    save([]);
   };
 
   const deleteLastMessagePair = () => {
@@ -161,14 +149,8 @@ ${messages.join('\n\n')}`;
   };
 
   useEffect(() => {
-    load();
-  }, [sourceContent]);
-
-  useEffect(() => {
-    if (sourceContent && history.length > 0 && !pendingForReply) {
-      save();
-    }
-  }, [sourceContent, history, pendingForReply]);
+    setHistory(importedMessages || []);
+  }, [importedMessages]);
 
   return {
     history,
