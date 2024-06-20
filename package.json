@@ -21,6 +21,7 @@
     "ngrok": "^5.0.0-beta.2",
     "pretty-file-tree": "^1.0.1",
     "react": "^18.3.1",
+    "react-device-detect": "^2.2.3",
     "react-dom": "^18.3.1",
     "react-markdown": "^9.0.1",
     "react-syntax-highlighter": "^15.5.0",

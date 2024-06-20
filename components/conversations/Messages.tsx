@@ -1,4 +1,5 @@
 import { FC, useContext, useState } from 'react';
+import { isIOS } from 'react-device-detect';
 import { toast } from 'react-toastify';
 
 import { useGithubRepo } from '@components/github/useGithubRepo';
@@ -79,14 +80,23 @@ export const Messages: FC<MessagesProps> = () => {
     const { content } = exportHistory() || {};
     if (!content) return;
 
-    // trigger download
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.download = `${sourceContent.id}.md`;
-    a.href = url;
-    a.click();
-    URL.revokeObjectURL(url);
+    const filename = `[Code Pilot] ${sourceContent.id}.md`;
+
+    // share as markdown file in share sheet
+    if (isIOS && navigator.share) {
+      const file = new File([content], filename, { type: 'text/plain' });
+      navigator.share({ files: [file] });
+    }
+    // download as markdown file
+    else {
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.download = filename;
+      a.href = url;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   };
 
   const importMarkdown = () => {
