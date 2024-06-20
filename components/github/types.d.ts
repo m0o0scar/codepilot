@@ -109,7 +109,7 @@ export interface GithubRepoInfo {
 }
 
 export interface GithubRepoContent {
-  id: GithubRepo;
+  id: string;
 
   tree: string;
   files: { [filename: string]: string };

@@ -83,7 +83,7 @@ export const Messages: FC<MessagesProps> = () => {
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.download = `${sourceContent.id.id}.md`;
+    a.download = `${sourceContent.id}.md`;
     a.href = url;
     a.click();
     URL.revokeObjectURL(url);

@@ -73,11 +73,11 @@ export const useChat = (sourceContent?: GithubRepoContent, importedMessages?: Me
 
     if (sourceContent && messages.length) {
       // compose the content
-      const exportContent = `# ${sourceContent.id.id}
+      const exportContent = `# ${sourceContent.id}
 
 ## 📖 Source Code
 
-- Repo: https://github.com/${sourceContent.id.id}
+- Repo: https://github.com/${sourceContent.id}
 - Souce code: ${format(sourceContent.tokenLength)} tokens
 
 ## 💬 Conversation
