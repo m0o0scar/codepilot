@@ -106,10 +106,7 @@ export default async function handler(request: NextRequest) {
       const contents = await Promise.all(
         files.map(async (e) => {
           const blob = await e.getData!(new BlobWriter());
-          const url = URL.createObjectURL(blob);
-          const response = await fetch(url);
-          const text = await response.text();
-          URL.revokeObjectURL(url);
+          const text = new TextDecoder().decode(await blob.arrayBuffer());
 
           const lines = text
             .split('\n')
