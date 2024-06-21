@@ -2,6 +2,7 @@ import '../styles/globals.css';
 
 import { DarkModeContextProvider } from '@components/commons/DarkModeContext';
 import { ToastContainer } from '@components/commons/ToastContainer';
+import { GithubRepoContextProvider } from '@components/github/GithubRepoContext';
 import { LLMContextProvider } from '@components/llm/LLMContext';
 import { SettingsContextProvider } from '@components/settings/SettingsContext';
 
@@ -13,7 +14,9 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
       <DarkModeContextProvider>
         <SettingsContextProvider>
           <LLMContextProvider>
-            <Component {...pageProps} />
+            <GithubRepoContextProvider>
+              <Component {...pageProps} />
+            </GithubRepoContextProvider>
           </LLMContextProvider>
         </SettingsContextProvider>
 

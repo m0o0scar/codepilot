@@ -2,7 +2,7 @@ import { FC, useContext, useState } from 'react';
 import { isIOS } from 'react-device-detect';
 import { toast } from 'react-toastify';
 
-import { useGithubRepo } from '@components/github/useGithubRepo';
+import { GithubRepoContext } from '@components/github/GithubRepoContext';
 import { Message } from '@components/llm/types';
 import { SettingsContext } from '@components/settings/SettingsContext';
 import { format, formatFileSize } from '@utils/number';
@@ -19,7 +19,13 @@ import { useChat } from './useChat';
 export interface MessagesProps {}
 
 export const Messages: FC<MessagesProps> = () => {
-  const { repo, url, setUrl, sourceContent, zipLoadedSize } = useGithubRepo();
+  const {
+    repo,
+    url,
+    setUrl,
+    sourceContent,
+    zipLoadedSize = 0,
+  } = useContext(GithubRepoContext) || {};
 
   const [importedMessages, setImportedMessages] = useState<Message[] | undefined>();
 
@@ -60,7 +66,7 @@ export const Messages: FC<MessagesProps> = () => {
 
   const onEnter = async (message: string) => {
     if (pendingForRepo) {
-      if (!setUrl(message)) {
+      if (!setUrl?.(message)) {
         toast.error('Invalid Github repo url');
       }
     } else {
@@ -141,7 +147,7 @@ export const Messages: FC<MessagesProps> = () => {
         })
         .flat();
 
-      if (setUrl(sourceUrl)) {
+      if (setUrl?.(sourceUrl)) {
         if (messages.length) setImportedMessages(messages);
       }
     };

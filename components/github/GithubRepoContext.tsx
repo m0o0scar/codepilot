@@ -1,7 +1,7 @@
 import { last } from 'lodash';
 // @ts-ignore
 import prettyTree from 'pretty-file-tree';
-import { useContext, useEffect, useState } from 'react';
+import { createContext, FC, ReactNode, useContext, useEffect, useState } from 'react';
 
 import { LLMContext } from '@components/llm/LLMContext';
 import { SettingsContext } from '@components/settings/SettingsContext';
@@ -14,7 +14,19 @@ import { GithubRepoContent, GithubRepoInfo } from './types';
 
 const SOURCE_SCHEMA_VERSION = 4;
 
-export const useGithubRepo = () => {
+export interface GithubRepoContextType {
+  repo?: GithubRepoInfo;
+  sourceContent?: GithubRepoContent;
+
+  url?: string;
+  setUrl: (url?: string) => void;
+
+  zipLoadedSize: number;
+}
+
+export const GithubRepoContext = createContext<GithubRepoContextType | null>(null);
+
+export const GithubRepoContextProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const settingsContext = useContext(SettingsContext);
   const llmContext = useContext(LLMContext);
 
@@ -209,11 +221,17 @@ export const useGithubRepo = () => {
     }
   }, [url, llmContext?.model]);
 
-  return {
-    repo,
-    url,
-    setUrl,
-    zipLoadedSize,
-    sourceContent,
-  };
+  return (
+    <GithubRepoContext.Provider
+      value={{
+        repo,
+        sourceContent,
+        url,
+        setUrl,
+        zipLoadedSize,
+      }}
+    >
+      {children}
+    </GithubRepoContext.Provider>
+  );
 };
