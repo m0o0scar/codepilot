@@ -1,7 +1,12 @@
 import { createContext, FC, ReactNode, useContext, useEffect, useState } from 'react';
 
 import { SettingsContext } from '@components/settings/SettingsContext';
-import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
+import {
+  GenerativeModel,
+  GoogleGenerativeAI,
+  HarmBlockThreshold,
+  HarmCategory,
+} from '@google/generative-ai';
 
 export interface LLMContextType {
   model: GenerativeModel | null;
@@ -18,7 +23,15 @@ export const LLMContextProvider: FC<{ children: ReactNode }> = ({ children }) =>
     const apiKey = settingsContext?.settings.googleVertexApiKey || '';
     if (apiKey) {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-1.5-flash',
+        safetySettings: [
+          {
+            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+            threshold: HarmBlockThreshold.BLOCK_NONE,
+          },
+        ],
+      });
       setModel(model);
     } else {
       setModel(null);

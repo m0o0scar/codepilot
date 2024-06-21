@@ -1,14 +1,8 @@
-import { last } from 'lodash';
-// @ts-ignore
-import prettyTree from 'pretty-file-tree';
 import { createContext, FC, ReactNode, useContext, useEffect, useState } from 'react';
 
-import { LLMContext } from '@components/llm/LLMContext';
 import { SettingsContext } from '@components/settings/SettingsContext';
-import { fetchWithProgress } from '@utils/fetch';
-import { formatFileSize } from '@utils/number';
+import { ResponseChunk } from '@pages/api/github/repo';
 import { del, get, put } from '@utils/storage';
-import { BlobReader, BlobWriter, ZipReader } from '@zip.js/zip.js';
 
 import { GithubRepoContent, GithubRepoInfo } from './types';
 
@@ -29,7 +23,6 @@ export const GithubRepoContext = createContext<GithubRepoContextType | null>(nul
 
 export const GithubRepoContextProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const settingsContext = useContext(SettingsContext);
-  const llmContext = useContext(LLMContext);
 
   const [url, _setUrl] = useState<string | undefined>();
   const [scopePath, setScopePath] = useState('');
@@ -51,8 +44,9 @@ export const GithubRepoContextProvider: FC<{ children: ReactNode }> = ({ childre
     setZipLoadedSize(0);
     setSourceContent(undefined);
 
-    const { githubClientId, githubClientSecret } = settingsContext?.settings || {};
-    if (!url || !llmContext?.model || !githubClientId || !githubClientSecret) return;
+    const { githubClientId, githubClientSecret, googleVertexApiKey } =
+      settingsContext?.settings || {};
+    if (!url || !googleVertexApiKey || !githubClientId || !githubClientSecret) return;
 
     /**
      * https://github.com
@@ -60,174 +54,99 @@ export const GithubRepoContextProvider: FC<{ children: ReactNode }> = ({ childre
      *    /llama_index <name>
      *    /tree
      *    /main <branch>
-     *    /llama-index-packs/llama-index-packs-raptor <path>
+     *    /llama-index-packs/llama-index-packs-raptor <scope path>
      */
     const [_, owner, name, _tree, _branch, ..._path] = new URL(url).pathname.split('/');
+    const id = `${owner}/${name}`;
     const path = _path.join('/');
     setScopePath(path);
 
-    // get repo info like default branch, etc.
-    const repoInfoResponse = await fetch(`https://api.github.com/repos/${owner}/${name}`, {
-      headers: {
-        // send github client id and secret as basic auth to prevent rate limiting
-        Authorization: `Basic ${btoa(`${githubClientId}:${githubClientSecret}`)}`,
-      },
-    });
-
-    const info = (await repoInfoResponse.json()) as GithubRepoInfo;
-    setRepo(info);
-
-    // use the branch name if provided from url,
-    // otherwise use the default branch from fetched repo info.
-    const branch = _branch || info.default_branch;
-
-    // if path is given in url, then later after zip file is unzipped, keep only those files that start with the path
-    const scope = _path.length ? `${info?.name}-${branch}/${path}` : null;
-
-    const placeholder: GithubRepoContent = {
-      id: info.full_name,
-      tree: '',
-      files: {},
-      content: '',
-      tokenLength: 0,
-      numberOfLines: 0,
-      schemaVersion: SOURCE_SCHEMA_VERSION,
-      sourceVersion: info.pushed_at,
-    };
-
-    if (repoInfoResponse.status === 404) {
-      setSourceContent({
-        ...placeholder,
-        error: 'Repo not found, is the url correct or is it a private repo?',
-      });
-      return;
-    }
-
-    // check if cached content is outdated
-    let key = `repo-content-${info.full_name}`;
+    // storage key
+    let key = `repo-content-${id}`;
     if (path) key += `-${path}`;
-    const cachedSourceContent = await get<GithubRepoContent>(key);
-    if (
-      cachedSourceContent?.schemaVersion === SOURCE_SCHEMA_VERSION &&
-      cachedSourceContent.sourceVersion === info.pushed_at
-    ) {
-      setSourceContent(cachedSourceContent);
-      return;
-    }
-    // if cached content is outdated, delete it
-    del(key);
 
-    // construct the url to download the zip file
-    const zipUrl = `https://github.com/${info.full_name}/archive/refs/heads/${branch}.zip`;
-    const proxyUrl = `/api/proxy?dest=${encodeURIComponent(zipUrl)}`;
-    const blob = await fetchWithProgress(proxyUrl, setZipLoadedSize);
-
-    // check if the zip file is too large, max = 200MB
-    if (blob.size > 200 * 1024 * 1024) {
-      const content = {
-        ...placeholder,
-        error: `The zip file is too large (${formatFileSize(blob.size)}), maximum is 100MB.`,
-      };
-      put(key, content);
-      setSourceContent(content);
-      return;
-    }
-
-    // unzip the file
-    const reader = new BlobReader(blob);
-    const zipReader = new ZipReader(reader);
-    const entries = await zipReader.getEntries();
-
-    // keep only source code files and markdowns
-    const files = entries.filter((e) => {
-      if (e.directory) return false;
-
-      // include files with these extensions
-      const ext = last(e.filename.split('.')) || '';
-      if (!['md', 'js', 'mjs', 'jsx', 'ts', 'tsx', 'css', 'html', 'json', 'py', 'rs'].includes(ext))
-        return false;
-
-      // ignore these files:
-      // - package-lock.json
-      // - .eslintrc.json
-      // - .d.ts
-      // - .github/
-      // - tests/
-      if (e.filename.match(/(package-lock\.json$|\.eslintrc\.json$|\.d\.ts$|\.github\/|\/tests\/)/))
-        return false;
-
-      if (scope && !e.filename.startsWith(scope)) return false;
-
-      return true;
+    // send request to server
+    const abortController = new AbortController();
+    const response = await fetch(`/api/github/repo?url=${encodeURIComponent(url)}`, {
+      method: 'POST',
+      headers: {
+        'x-gemini-token': googleVertexApiKey,
+        'x-github-client-id': githubClientId,
+        'x-github-client-secret': githubClientSecret,
+      },
+      signal: abortController.signal,
     });
 
-    // read file content
-    let numberOfLines = 0;
-    const rootFolderNamePattern = new RegExp(`^${info.name}-${branch}\/`);
-    const filesMap: { [filename: string]: string } = {};
-    const contents = await Promise.all(
-      files.map(async (e) => {
-        const blob = await e.getData!(new BlobWriter());
-        const url = URL.createObjectURL(blob);
-        const response = await fetch(url);
-        const text = await response.text();
-        URL.revokeObjectURL(url);
+    // handle streaming response
+    const reader = response.body!.getReader();
+    const decoder = new TextDecoder();
+    let info: GithubRepoInfo | undefined;
+    let acc = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      acc += decoder.decode(value);
+      const lines = acc.split('\n\n');
 
-        const lines = text
-          .split('\n')
-          .map((l) => l.trim())
-          .filter(Boolean);
-        numberOfLines += lines.length;
+      for (const line of lines) {
+        try {
+          const data = JSON.parse(line) as ResponseChunk;
 
-        const filename = e.filename.replace(rootFolderNamePattern, 'root/');
-        filesMap[filename] = text;
+          if ('error' in data) {
+            setSourceContent({
+              id,
+              tree: '',
+              content: '',
+              tokenLength: 0,
+              numberOfLines: 0,
+              sourceVersion: '',
+              schemaVersion: SOURCE_SCHEMA_VERSION,
+              error: data.error,
+            });
+            return;
+          }
 
-        const ext = last(e.filename.split('.')) || '';
-        const block = `${e.filename}:\n\n\`\`\`${ext}\n${text}\n\`\`\``;
+          if ('info' in data) {
+            info = data.info as GithubRepoInfo;
+            setRepo(data.info);
 
-        return { filename, content: text, block };
-      }),
-    );
+            // check if cached content is outdated
+            const cachedSourceContent = await get<GithubRepoContent>(key);
+            if (
+              cachedSourceContent?.schemaVersion === SOURCE_SCHEMA_VERSION &&
+              cachedSourceContent.sourceVersion === info.pushed_at
+            ) {
+              setSourceContent(cachedSourceContent);
+              abortController.abort();
+              return;
+            }
+            // if cached content is outdated, delete it
+            del(key);
+          }
 
-    // calculate token length and cost based on all combined source code
-    const sourceCode = contents.map(({ block }) => block).join('\n\n');
+          if ('zipLoaded' in data) setZipLoadedSize(data.zipLoaded);
 
-    let tokenLength = 0;
-    try {
-      const { totalTokens } = await llmContext.model.countTokens(sourceCode);
-      tokenLength = totalTokens;
-    } catch (error) {
-      const content = { ...placeholder, error: String(error) };
-      put(key, content);
-      setSourceContent(content);
-      return;
+          if ('content' in data) {
+            const sourceContent: GithubRepoContent = {
+              id,
+              tree: data.tree,
+              content: data.content,
+              tokenLength: data.tokens,
+              numberOfLines: data.lines,
+              sourceVersion: info!.pushed_at,
+              schemaVersion: SOURCE_SCHEMA_VERSION,
+            };
+            console.log(sourceContent);
+            put(key, sourceContent);
+            setSourceContent(sourceContent);
+          }
+        } catch (error) {
+          acc = line;
+          break;
+        }
+      }
+
+      if (done) break;
     }
-
-    // create directory tree
-    const filePaths = contents.map((e) => e.filename);
-    const tree = prettyTree(filePaths);
-    console.log(tree);
-
-    const concatted = [
-      `Project: ${info.full_name}`,
-      `Branch: ${branch}`,
-      `Source tree:\n\n\`\`\`\n${tree}\n\`\`\``,
-      sourceCode,
-    ]
-      .filter(Boolean)
-      .join('\n\n');
-
-    const sourceContent = {
-      ...placeholder,
-      tree,
-      files: filesMap,
-      content: concatted,
-      tokenLength,
-      numberOfLines,
-    };
-
-    put(key, sourceContent);
-    setSourceContent(sourceContent);
   };
 
   useEffect(() => {
@@ -238,11 +157,11 @@ export const GithubRepoContextProvider: FC<{ children: ReactNode }> = ({ childre
   }, []);
 
   useEffect(() => {
-    if (url && llmContext?.model) {
+    if (url) {
       setRepo(undefined);
       fetchRepoContent();
     }
-  }, [url, llmContext?.model]);
+  }, [url]);
 
   return (
     <GithubRepoContext.Provider
