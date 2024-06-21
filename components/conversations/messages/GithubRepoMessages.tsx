@@ -1,3 +1,4 @@
+import cls from 'classnames';
 /* eslint-disable @next/next/no-img-element */
 import { FC, useContext } from 'react';
 
@@ -29,24 +30,22 @@ export const GithubRepoMessage: FC = () => {
         )
       }
     >
-      <div className="flex flex-row gap-1">
+      <div className="flex flex-row gap-1 items-center">
         {repoContext.repo && (
           <img
-            className="w-5 rounded"
+            className={cls('rounded', repoContext.scopePath ? 'w-8' : 'w-5')}
             src={repoContext.repo.owner.avatar_url}
             alt={repoContext.repo.owner.login}
           />
         )}
-        <a
-          href={
-            repoContext.repo ? `https://github.com/${repoContext.repo.full_name}` : repoContext.url
-          }
-          target="_blank"
-          rel="noreferrer"
-          className="underline"
-        >
-          {repoContext.repo ? repoContext.repo.full_name : repoContext.url} ↗️
-        </a>
+        <div className="flex flex-col">
+          <a href={repoContext.url} target="_blank" rel="noreferrer" className="underline">
+            {repoContext.repo ? repoContext.repo.full_name : repoContext.url} ↗️
+          </a>
+          {repoContext.scopePath && (
+            <span className="text-xs opacity-50">Scope: {repoContext.scopePath}</span>
+          )}
+        </div>
       </div>
     </ChatBubble>
   );
