@@ -178,7 +178,7 @@ export const Messages: FC<MessagesProps> = () => {
         {!pendingForApiKeys && !pendingForRepo && (
           <>
             {/* message with link to the repo */}
-            <GithubRepoMessage repo={repo} />
+            <GithubRepoMessage />
 
             {/* fetching source code ... */}
             {pendingForRepoSourceContent && (
@@ -199,7 +199,7 @@ export const Messages: FC<MessagesProps> = () => {
 
             {/* source code fetched */}
             {!pendingForRepoSourceContent && !sourceContent.error && !sourceContentTooLarge && (
-              <GithubRepoSourceFetchedMessage sourceContent={sourceContent} />
+              <GithubRepoSourceFetchedMessage />
             )}
           </>
         )}

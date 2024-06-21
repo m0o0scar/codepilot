@@ -1,40 +1,46 @@
 /* eslint-disable @next/next/no-img-element */
-import { FC } from 'react';
+import { FC, useContext } from 'react';
 
-import { GithubRepoContent, GithubRepoInfo } from '@components/github/types';
+import { GithubRepoContext } from '@components/github/GithubRepoContext';
 import { format } from '@utils/number';
 
 import { ChatBubble } from '../ChatBubble';
 
-export const GithubRepoMessage: FC<{ repo?: GithubRepoInfo }> = ({ repo }) => {
-  if (!repo) return null;
+export const GithubRepoMessage: FC = () => {
+  const repoContext = useContext(GithubRepoContext);
+  if (!repoContext?.repo) return null;
 
   return (
     <ChatBubble isSentByMe>
       <div className="flex flex-row gap-1">
-        <img className="w-5 rounded" src={repo.owner.avatar_url} alt={repo.owner.login} />
+        <img
+          className="w-5 rounded"
+          src={repoContext.repo.owner.avatar_url}
+          alt={repoContext.repo.owner.login}
+        />
         <a
-          href={`https://github.com/${repo.full_name}`}
+          href={`https://github.com/${repoContext.repo.full_name}`}
           target="_blank"
           rel="noreferrer"
           className="underline"
         >
-          {repo.full_name} ↗️
+          {repoContext.repo.full_name} ↗️
         </a>
       </div>
     </ChatBubble>
   );
 };
 
-export const GithubRepoSourceFetchedMessage: FC<{ sourceContent?: GithubRepoContent }> = ({
-  sourceContent,
-}) => {
-  if (!sourceContent) return null;
+export const GithubRepoSourceFetchedMessage = () => {
+  const repoContext = useContext(GithubRepoContext);
+  if (!repoContext?.sourceContent) return null;
+
   return (
     <ChatBubble
       footer={
         <div className="badge badge-ghost badge-sm">
-          {format(sourceContent!.tokenLength)} tokens / {format(sourceContent.numberOfLines)} lines
+          {format(repoContext.sourceContent.tokenLength)} tokens /{' '}
+          {format(repoContext.sourceContent.numberOfLines)} lines
         </div>
       }
     >
