@@ -122,8 +122,8 @@ export const GithubRepoContextProvider: FC<{ children: ReactNode }> = ({ childre
     const proxyUrl = `/api/proxy?dest=${encodeURIComponent(zipUrl)}`;
     const blob = await fetchWithProgress(proxyUrl, setZipLoadedSize);
 
-    // check if the zip file is too large, max = 100MB
-    if (blob.size > 100 * 1024 * 1024) {
+    // check if the zip file is too large, max = 200MB
+    if (blob.size > 200 * 1024 * 1024) {
       const content = {
         ...placeholder,
         error: `The zip file is too large (${formatFileSize(blob.size)}), maximum is 100MB.`,
