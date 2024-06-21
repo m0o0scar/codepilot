@@ -80,11 +80,17 @@ export const Messages: FC<MessagesProps> = () => {
     }
   };
 
-  const saveAsMarkdown = () => {
+  const saveAsMarkdown = async (saveToClipboard?: boolean) => {
     if (!sourceContent) return;
 
     const { content } = exportHistory() || {};
     if (!content) return;
+
+    if (saveToClipboard) {
+      await navigator.clipboard.writeText(content);
+      toast.success('Conversation saved to clipboard');
+      return;
+    }
 
     const filename = `${repo!.name}.md`;
 
@@ -102,6 +108,7 @@ export const Messages: FC<MessagesProps> = () => {
       a.href = url;
       a.click();
       URL.revokeObjectURL(url);
+      toast.success('Conversation saved as markdown file');
     }
   };
 
@@ -255,8 +262,12 @@ export const Messages: FC<MessagesProps> = () => {
                     </button>
 
                     {/* download as markdown button */}
-                    <button className="btn btn-sm" onClick={saveAsMarkdown}>
-                      Export
+                    <button className="btn btn-sm" onClick={() => saveAsMarkdown()}>
+                      Download
+                    </button>
+
+                    <button className="btn btn-sm" onClick={() => saveAsMarkdown(true)}>
+                      Copy
                     </button>
                   </>
                 )}
