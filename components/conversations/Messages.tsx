@@ -12,7 +12,11 @@ import { MessageHint } from './MessageHint';
 import { MessageInput } from './MessageInput';
 import { ChatMessage } from './messages/ChatMessages';
 import { PleaseProvideAPIKeyMessage } from './messages/GeminiMessages';
-import { GithubRepoMessage, GithubRepoSourceFetchedMessage } from './messages/GithubRepoMessages';
+import {
+  GithubRepoMessage,
+  GithubRepoSourceFetchedMessage,
+  GithubRepoSourceFetchingMessage,
+} from './messages/GithubRepoMessages';
 import { SystemMessage } from './messages/SystemMessages';
 import { useChat } from './useChat';
 
@@ -182,9 +186,7 @@ export const Messages: FC<MessagesProps> = () => {
 
             {/* fetching source code ... */}
             {pendingForRepoSourceContent && (
-              <ChatBubble>
-                Fetching source code ({formatFileSize(zipLoadedSize, '-')}) ...
-              </ChatBubble>
+              <GithubRepoSourceFetchingMessage loaded={zipLoadedSize} />
             )}
 
             {/* fetching source code failed */}
