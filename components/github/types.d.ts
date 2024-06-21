@@ -112,7 +112,6 @@ export interface GithubRepoContent {
   id: string;
 
   tree: string;
-  files: { [filename: string]: string };
 
   content: string;
   tokenLength: number;
