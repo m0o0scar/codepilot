@@ -1,11 +1,10 @@
 import { last } from 'lodash';
-import { Dispatch, SetStateAction, useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 
-import { GithubRepoContent } from '@components/github/types';
+import { GithubRepoContext } from '@components/github/GithubRepoContext';
 import { LLMContext } from '@components/llm/LLMContext';
 import { Message } from '@components/llm/types';
 import { format } from '@utils/number';
-import { get, put } from '@utils/storage';
 
 export interface SystemNote {
   content: string;
@@ -13,8 +12,10 @@ export interface SystemNote {
 
 export type History = Message | SystemNote;
 
-export const useChat = (sourceContent?: GithubRepoContent, importedMessages?: Message[]) => {
+export const useChat = (importedMessages?: Message[]) => {
   const llmContext = useContext(LLMContext);
+
+  const { url, repo, scopePath, sourceContent } = useContext(GithubRepoContext) || {};
 
   const [pendingForResponse, setPendingForResponse] = useState(false);
   const [pendingForReply, setPendingForReply] = useState(false);
@@ -71,14 +72,15 @@ export const useChat = (sourceContent?: GithubRepoContent, importedMessages?: Me
       },
     );
 
-    if (sourceContent && messages.length) {
+    if (repo && sourceContent && messages.length) {
       // compose the content
-      const exportContent = `# ${sourceContent.id}
+      const scopeName = last((scopePath || '').split('/'));
+      const exportContent = `# ${repo.name}${scopeName ? ` - ${scopeName}` : ''}
 
 ## 📖 Source Code
 
-- Repo: https://github.com/${sourceContent.id}
-- Souce code: ${format(sourceContent.tokenLength)} tokens
+- Repo: ${url}
+- Content length: ${format(sourceContent.numberOfLines)} lines, ${format(sourceContent.tokenLength)} tokens
 
 ## 💬 Conversation
 
@@ -90,13 +92,20 @@ ${messages.join('\n\n')}`;
   };
 
   const sendMessage = async (content: string) => {
-    if (llmContext?.model && sourceContent && !pendingForReply) {
+    if (llmContext?.model && repo && sourceContent && !pendingForReply) {
       setPendingForResponse(true);
       setPendingForReply(true);
 
       addUserMessage(content);
 
-      const systemPrompt = `You are Code Pilot. The following are the source code files of a project. Please read the code carefully and answer my questions accurately and concisely. Always cite the relevant source code file (for example: [\`<file name>\`](https://github.com/<owner>/<repo>/blob/<branch>/<file path>)) and quote relevant code snippets in your reply to support your answer.\n\n${sourceContent.content}`;
+      const instruction = [
+        `You are Code Pilot.`,
+        `The following are the source code files of project "${repo.name}".`,
+        `Please read the code carefully and answer my questions accurately and concisely.`,
+        `Always cite the relevant source code file and quote relevant code snippets in your reply to support your answer.`,
+      ].join(' ');
+
+      const systemPrompt = `${instruction}\n\n${sourceContent.content}`;
 
       const chat = llmContext.model.startChat({
         history: [
@@ -147,6 +156,10 @@ ${messages.join('\n\n')}`;
       }
     }
   };
+
+  useEffect(() => {
+    clearHistory();
+  }, [url]);
 
   useEffect(() => {
     setHistory(importedMessages || []);

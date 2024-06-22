@@ -1,3 +1,4 @@
+import { last } from 'lodash';
 import { FC, useContext, useState } from 'react';
 import { isIOS } from 'react-device-detect';
 import { toast } from 'react-toastify';
@@ -5,7 +6,7 @@ import { toast } from 'react-toastify';
 import { GithubRepoContext } from '@components/github/GithubRepoContext';
 import { Message } from '@components/llm/types';
 import { SettingsContext } from '@components/settings/SettingsContext';
-import { format, formatFileSize } from '@utils/number';
+import { format } from '@utils/number';
 
 import { ChatBubble } from './ChatBubble';
 import { MessageHint } from './MessageHint';
@@ -20,13 +21,12 @@ import {
 import { SystemMessage } from './messages/SystemMessages';
 import { useChat } from './useChat';
 
-export interface MessagesProps {}
-
-export const Messages: FC<MessagesProps> = () => {
+export const Messages: FC = () => {
   const {
     repo,
     url,
     setUrl,
+    scopePath,
     sourceContent,
     zipLoadedSize = 0,
   } = useContext(GithubRepoContext) || {};
@@ -42,7 +42,7 @@ export const Messages: FC<MessagesProps> = () => {
     exportHistory,
     getMessagePair,
     deleteMessagePair,
-  } = useChat(sourceContent, importedMessages);
+  } = useChat(importedMessages);
 
   const { pendingForApiKeys } = useContext(SettingsContext) || {};
   const fetchingRepoInfo = url && !repo;
@@ -96,7 +96,8 @@ export const Messages: FC<MessagesProps> = () => {
       return;
     }
 
-    const filename = `${repo!.name}.md`;
+    const scopeName = last((scopePath || '').split('/'));
+    const filename = `${repo!.name}${scopeName ? ` - ${scopeName}` : ''}.md`;
 
     // share as markdown file in share sheet
     if (isIOS && navigator.share) {
@@ -217,7 +218,9 @@ export const Messages: FC<MessagesProps> = () => {
                   <MessageHint
                     content="How does it work?"
                     onClick={() =>
-                      sendMessage('Explain from a high level, how does this project work?')
+                      sendMessage(
+                        'Explain what this project do how it works by referencing the most important code snippets.',
+                      )
                     }
                   />
                   <MessageHint

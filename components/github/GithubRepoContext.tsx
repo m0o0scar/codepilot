@@ -25,20 +25,29 @@ export const GithubRepoContextProvider: FC<{ children: ReactNode }> = ({ childre
   const settingsContext = useContext(SettingsContext);
 
   const [url, _setUrl] = useState<string | undefined>();
-  const [scopePath, setScopePath] = useState('');
   const setUrl = (url?: string) => {
     if (url && url.startsWith('https://github.com/')) {
       _setUrl(url);
       return true;
     }
+    _setUrl(undefined);
     return false;
   };
+
+  const [scopePath, setScopePath] = useState('');
 
   const [repo, setRepo] = useState<GithubRepoInfo | undefined>();
 
   const [zipLoadedSize, setZipLoadedSize] = useState(0);
 
   const [sourceContent, setSourceContent] = useState<GithubRepoContent | undefined>();
+
+  const reset = () => {
+    setScopePath('');
+    setRepo(undefined);
+    setZipLoadedSize(0);
+    setSourceContent(undefined);
+  };
 
   const fetchRepoContent = async () => {
     setZipLoadedSize(0);
@@ -160,6 +169,8 @@ export const GithubRepoContextProvider: FC<{ children: ReactNode }> = ({ childre
     if (url) {
       setRepo(undefined);
       fetchRepoContent();
+    } else {
+      reset();
     }
   }, [url]);
 
