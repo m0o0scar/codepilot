@@ -123,12 +123,14 @@ export default async function handler(request: NextRequest) {
         }),
       );
 
+      // combine all source code
+      const sourceCode = contents.map(({ block }) => block).join('\n\n');
+
       // prepare gemini model
       const genAI = new GoogleGenerativeAI(geminiToken);
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
       // calculate token length and cost based on all combined source code
-      const sourceCode = contents.map(({ block }) => block).join('\n\n');
       let tokenLength = 0;
       try {
         const { totalTokens } = await model.countTokens(sourceCode);
