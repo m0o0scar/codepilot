@@ -7,6 +7,8 @@ export interface Settings {
 }
 
 export interface SettingsContextType {
+  pending: boolean;
+
   settings: Settings;
   setSetting: (key: keyof Settings, value: Settings[keyof Settings]) => void;
   setSettings: (changes: Partial<Settings>) => void;
@@ -21,6 +23,8 @@ export interface SettingsContextType {
 export const SettingsContext = createContext<SettingsContextType | null>(null);
 
 export const SettingsContextProvider: FC<{ children: ReactNode }> = ({ children }) => {
+  const [pending, setPending] = useState(true);
+
   const [settings, _setSettings] = useState<Settings>({});
 
   const pendingForApiKeys =
@@ -41,6 +45,7 @@ export const SettingsContextProvider: FC<{ children: ReactNode }> = ({ children 
   useEffect(() => {
     const cached = localStorage.getItem('settings');
     if (cached) _setSettings(JSON.parse(cached));
+    setPending(false);
   }, []);
 
   useEffect(() => {
@@ -50,6 +55,8 @@ export const SettingsContextProvider: FC<{ children: ReactNode }> = ({ children 
   return (
     <SettingsContext.Provider
       value={{
+        pending,
+
         // settings value
         settings,
         setSetting,

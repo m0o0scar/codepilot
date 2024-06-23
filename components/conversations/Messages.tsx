@@ -44,7 +44,7 @@ export const Messages: FC = () => {
     deleteMessagePair,
   } = useChat(importedMessages);
 
-  const { pendingForApiKeys } = useContext(SettingsContext) || {};
+  const { pending, pendingForApiKeys } = useContext(SettingsContext) || {};
   const fetchingRepoInfo = url && !repo;
   const pendingForRepo = !repo;
   const pendingForRepoSourceContent = !sourceContent;
@@ -165,6 +165,15 @@ export const Messages: FC = () => {
     };
     input.click();
   };
+
+  // show spinner when waiting for settings to be loaded
+  if (pending === undefined || pending === true) {
+    return (
+      <div className="flex flex-col gap-2 justify-center items-center mt-4">
+        <span className="loading loading-dots loading-xs"></span>
+      </div>
+    );
+  }
 
   return (
     <>
