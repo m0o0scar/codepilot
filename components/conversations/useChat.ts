@@ -123,7 +123,7 @@ ${messages.join('\n\n')}`;
             })),
         ],
         generationConfig: {
-          maxOutputTokens: 2000,
+          maxOutputTokens: 4000,
           temperature: 0,
         },
       });
