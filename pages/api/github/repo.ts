@@ -17,8 +17,55 @@ export type ResponseChunk =
   | { zipLoaded: number }
   | { tree: string; content: string; lines: number; tokens: number };
 
-const includeFileExts = ['md', 'js', 'mjs', 'jsx', 'ts', 'tsx', 'css', 'html', 'json', 'py', 'rs'];
-const excludeFilePattern = /(package-lock\.json$|\.eslintrc\.json$|\.d\.ts$|\.github\/|\/tests\/)/;
+const includeFileExts = [
+  // common files like documents or configs etc
+  'md',
+  'json',
+  'yaml',
+  'toml',
+
+  // web
+  'js',
+  'mjs',
+  'jsx',
+  'ts',
+  'tsx',
+  'html',
+
+  // python
+  'py',
+
+  // Rust
+  'rs',
+
+  // Flutter
+  'dart',
+];
+
+const excludeFilePattern = new RegExp(
+  [
+    // any file or folder that starts with .
+    /\/\./,
+
+    // common files / folders
+    /\.bak$/,
+
+    // test folder
+    /\/tests\//,
+
+    // web
+    /package-lock\.json$/,
+    /\.eslintrc\.json$/,
+    /\.min\.js$/,
+    /\/build\//,
+    /\/dist\//,
+
+    // python
+    /\.lock$/,
+  ]
+    .map((regex) => regex.source)
+    .join('|'),
+);
 
 export default async function handler(request: NextRequest) {
   // get github token from header

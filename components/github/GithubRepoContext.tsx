@@ -6,7 +6,7 @@ import { del, get, put } from '@utils/storage';
 
 import { GithubRepoContent, GithubRepoInfo } from './types';
 
-const SOURCE_SCHEMA_VERSION = 7;
+const SOURCE_SCHEMA_VERSION = 9;
 
 export interface GithubRepoContextType {
   repo?: GithubRepoInfo;
@@ -144,7 +144,7 @@ export const GithubRepoContextProvider: FC<{ children: ReactNode }> = ({ childre
               sourceVersion: info!.pushed_at,
               schemaVersion: SOURCE_SCHEMA_VERSION,
             };
-            console.log(sourceContent);
+            console.log(sourceContent.tree);
             put(key, sourceContent);
             setSourceContent(sourceContent);
           }
