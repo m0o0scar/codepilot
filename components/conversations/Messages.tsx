@@ -117,7 +117,40 @@ export const Messages: FC = () => {
     }
   };
 
-  const importMarkdown = () => {
+  const importMarkdown = (markdown: string) => {
+    // parse the source url and conversation
+    const splitted = markdown.split(/📖 Source Code\n\n|💬 Conversation\n\n/);
+    const sourceCodeBlock = splitted.find((block) => block.startsWith('- Repo: ')) || '';
+    const conversationBlock =
+      '\n\n' + (splitted.find((block) => block.startsWith('---\n\n')) || '');
+
+    const sourceUrl = (
+      sourceCodeBlock.split('\n').find((l) => l.startsWith('- Repo: https://github.com/')) || ''
+    ).replace('- Repo: ', '');
+
+    if (!sourceUrl) {
+      toast.error('Invalid markdown file');
+      return;
+    }
+
+    const messages = conversationBlock
+      .split('\n\n---\n\n### ')
+      .filter(Boolean)
+      .map((l) => {
+        const [question, ...answers] = l.split('\n\n');
+        return [
+          { role: 'user', content: question },
+          { role: 'model', content: answers.join('\n\n').trim() },
+        ] as Message[];
+      })
+      .flat();
+
+    if (setUrl?.(sourceUrl)) {
+      if (messages.length) setImportedMessages(messages);
+    }
+  };
+
+  const importMarkdownFromFile = () => {
     // select markdown file
     const input = document.createElement('input');
     input.type = 'file';
@@ -125,45 +158,15 @@ export const Messages: FC = () => {
     input.onchange = async () => {
       const file = input.files?.[0];
       if (!file) return;
-
-      // read file content as text
       const content = await file.text();
-
-      // parse the source url and conversation
-      const [
-        _title,
-        _sourceCodeSection,
-        _sourceCode = '',
-        _conversationSection,
-        _conversation = '',
-      ] = content.split(/(## 📖 Source Code|## 💬 Conversation)/);
-
-      const sourceUrl = (
-        _sourceCode.split('\n').find((l) => l.startsWith('- Repo: https://github.com/')) || ''
-      ).replace('- Repo: ', '');
-
-      if (!sourceUrl) {
-        toast.error('Invalid markdown file');
-        return;
-      }
-
-      const messages = _conversation
-        .split('\n\n---\n\n### ')
-        .filter(Boolean)
-        .map((l) => {
-          const [question, ...answers] = l.split('\n\n');
-          return [
-            { role: 'user', content: question },
-            { role: 'model', content: answers.join('\n\n').trim() },
-          ] as Message[];
-        })
-        .flat();
-
-      if (setUrl?.(sourceUrl)) {
-        if (messages.length) setImportedMessages(messages);
-      }
+      importMarkdown(content);
     };
     input.click();
+  };
+
+  const importMarkdownFromClipboard = async () => {
+    const content = await navigator.clipboard.readText();
+    importMarkdown(content);
   };
 
   // show spinner when waiting for settings to be loaded
@@ -306,7 +309,14 @@ export const Messages: FC = () => {
               <button
                 className="btn btn-xs btn-square"
                 disabled={!pendingForRepo && pendingForRepoSourceContent}
-                onClick={importMarkdown}
+                onClick={importMarkdownFromClipboard}
+              >
+                📋
+              </button>
+              <button
+                className="btn btn-xs btn-square"
+                disabled={!pendingForRepo && pendingForRepoSourceContent}
+                onClick={importMarkdownFromFile}
               >
                 ⬆️
               </button>
