@@ -12,6 +12,8 @@ export const config = {
   runtime: 'edge',
 };
 
+export const SOURCE_SCHEMA_VERSION = 11;
+
 export type ResponseChunk =
   | { info?: GithubRepoInfo; error?: string }
   | { zipLoaded: number }
@@ -47,11 +49,10 @@ const excludeFilePattern = new RegExp(
     // any file or folder that starts with .
     /\/\./,
 
-    // common files / folders
+    // common non-source files / folders
     /\.bak$/,
-
-    // test folder
     /\/tests\//,
+    /\/benchmark\//,
 
     // web
     /package-lock\.json$/,

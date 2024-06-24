@@ -1,12 +1,10 @@
 import { createContext, FC, ReactNode, useContext, useEffect, useState } from 'react';
 
 import { SettingsContext } from '@components/settings/SettingsContext';
-import { ResponseChunk } from '@pages/api/github/repo';
+import { ResponseChunk, SOURCE_SCHEMA_VERSION } from '@pages/api/github/repo';
 import { del, get, put } from '@utils/storage';
 
 import { GithubRepoContent, GithubRepoInfo } from './types';
-
-const SOURCE_SCHEMA_VERSION = 10;
 
 export interface GithubRepoContextType {
   repo?: GithubRepoInfo;
