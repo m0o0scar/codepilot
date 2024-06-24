@@ -149,24 +149,27 @@ export default async function handler(request: NextRequest) {
 
       // read file contents
       let numberOfLines = 0;
-      const filesMap: { [filename: string]: string } = {};
       const contents = await Promise.all(
         files.map(async (e) => {
+          // read file content
           const blob = await e.getData!(new BlobWriter());
           const text = new TextDecoder().decode(await blob.arrayBuffer());
+          const rows = text.split('\n');
 
-          const lines = text
-            .split('\n')
-            .map((l) => l.trim())
-            .filter(Boolean);
+          // calculate the number of lines
+          const lines = rows.map((l) => l.trim()).filter(Boolean);
           numberOfLines += lines.length;
 
-          filesMap[e.filename] = text;
+          const lineNumberWidth = String(rows.length).length;
+          const textWithLineNumbers = rows
+            .map((line, i) => `${String(i + 1).padStart(lineNumberWidth)} ${line}`)
+            .join('\n');
 
+          // create a code block
           const ext = last(e.filename.split('.')) || '';
-          const block = `${e.filename}:\n\n\`\`\`${ext}\n${text}\n\`\`\``;
+          const block = `${e.filename}:\n\n\`\`\`${ext}\n${textWithLineNumbers}\n\`\`\``;
 
-          return { filename: e.filename, content: text, block };
+          return { filename: e.filename, block };
         }),
       );
 
