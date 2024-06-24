@@ -16,12 +16,16 @@ export const MessageInput: FC<MessageInputProps> = ({
 }) => {
   const [value, setValue] = useState('');
 
-  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const sendMessage = () => {
     const trimmed = value.trim();
-    if (e.key === 'Enter' && trimmed) {
+    if (trimmed) {
       onEnter?.(trimmed);
       setValue('');
     }
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') sendMessage();
   };
 
   return (
@@ -47,7 +51,9 @@ export const MessageInput: FC<MessageInputProps> = ({
           </button>
         )}
         {accessories}
-        <kbd className="kbd kbd-sm">↵</kbd>
+        <kbd className="kbd kbd-sm" onClick={sendMessage}>
+          ↵
+        </kbd>
       </label>
     </div>
   );
