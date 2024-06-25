@@ -15,9 +15,10 @@ import { MessageInput } from './MessageInput';
 import { ChatMessage } from './messages/ChatMessages';
 import { PleaseProvideAPIKeyMessage } from './messages/GeminiMessages';
 import {
-    GithubRepoMessage, GithubRepoSourceFetchedMessage, GithubRepoSourceFetchingMessage
+  GithubRepoMessage,
+  GithubRepoSourceFetchedMessage,
+  GithubRepoSourceFetchingMessage,
 } from './messages/GithubRepoMessages';
-import { SystemMessage } from './messages/SystemMessages';
 import { History, useChat } from './useChat';
 
 export const Messages: FC = () => {
