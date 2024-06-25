@@ -78,8 +78,7 @@ export const GithubRepoContextProvider: FC<{ children: ReactNode }> = ({ childre
       method: 'POST',
       headers: {
         'x-gemini-token': googleVertexApiKey,
-        'x-github-client-id': githubClientId,
-        'x-github-client-secret': githubClientSecret,
+        'x-github-token': btoa(`${githubClientId}:${githubClientSecret}`),
       },
       signal: abortController.signal,
     });

@@ -72,11 +72,9 @@ const excludeFilePattern = new RegExp(
 
 export default async function handler(request: NextRequest) {
   // get github token from header
-  const githubClientID = request.headers.get('x-github-client-id');
-  const githubClientSecret = request.headers.get('x-github-client-secret');
+  const githubToken = request.headers.get('x-github-token');
   const geminiToken = request.headers.get('x-gemini-token');
-  if (!githubClientID || !githubClientSecret)
-    return new Response('github credential is required', { status: 400 });
+  if (!githubToken) return new Response('github credential is required', { status: 400 });
   if (!geminiToken) return new Response('gemini credential is required', { status: 400 });
 
   // get url from query
@@ -107,7 +105,7 @@ export default async function handler(request: NextRequest) {
       // get repo info like default branch, etc.
       const infoResponse = await fetch(`https://api.github.com/repos/${owner}/${name}`, {
         headers: {
-          Authorization: `Basic ${btoa(`${githubClientID}:${githubClientSecret}`)}`,
+          Authorization: `Basic ${githubToken}`,
         },
       });
       if (infoResponse.status !== 200) {
