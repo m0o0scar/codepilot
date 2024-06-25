@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import { GithubRepoContext } from '@components/github/GithubRepoContext';
 import { Message } from '@components/llm/types';
 import { SettingsContext } from '@components/settings/SettingsContext';
+import { downloadTextFile } from '@utils/file';
 import { format } from '@utils/number';
 
 import { ChatBubble } from './ChatBubble';
@@ -106,13 +107,7 @@ export const Messages: FC = () => {
     }
     // download as markdown file
     else {
-      const blob = new Blob([content], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.download = filename;
-      a.href = url;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadTextFile(content, 'text/plain', filename);
       toast.success('Conversation saved as markdown file');
     }
   };
