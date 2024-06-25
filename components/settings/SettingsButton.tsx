@@ -8,7 +8,7 @@ export const SettingsButton: FC<{ label?: string }> = ({ label }) => {
 
   return (
     <button
-      className={cls('btn btn-ghost btn-sm', { 'btn-square': !label })}
+      className={cls('btn btn-sm', { 'btn-square': !label })}
       onClick={settingsContext?.openSettingModal}
     >
       {label || '⚙️'}
