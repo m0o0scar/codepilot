@@ -6,13 +6,12 @@ import { LLMContext } from '@components/llm/LLMContext';
 import { Message } from '@components/llm/types';
 import { format } from '@utils/number';
 
-export interface SystemNote {
-  content: string;
+export interface History {
+  userMessage: Message;
+  modelMessage?: Message;
 }
 
-export type History = Message | SystemNote;
-
-export const useChat = (importedMessages?: Message[]) => {
+export const useChat = (importedMessages?: History[]) => {
   const llmContext = useContext(LLMContext);
 
   const { url, repo, scopePath, sourceContent } = useContext(GithubRepoContext) || {};
@@ -23,53 +22,34 @@ export const useChat = (importedMessages?: Message[]) => {
   const [history, setHistory] = useState<History[]>([]);
 
   const addUserMessage = (content: string) =>
-    setHistory((prev) => [...prev, { role: 'user', content }]);
+    setHistory((prev) => [...prev, { userMessage: { role: 'user', content } }]);
 
   const setLastModelMessage = (content: string, usage?: Message['usage']) => {
     setHistory((prev) => {
       const lastItem = last(prev);
-      const isModelMessage = lastItem && 'role' in lastItem && lastItem.role === 'model';
 
-      if (!prev.length || !isModelMessage) {
-        // add a new model message
-        return [...prev, { role: 'model', content, usage }];
-      } else {
-        // update the content of last model message
-        return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content, usage } : m));
-      }
+      if (!lastItem?.userMessage) return prev;
+
+      return prev.map((item, i) => {
+        if (i !== prev.length - 1) return item;
+        if (!item.modelMessage) return { ...item, modelMessage: { role: 'model', content, usage } };
+        return { ...item, modelMessage: { ...item.modelMessage, content, usage } };
+      });
     });
   };
-
-  const addSystemNote = (content: string) => setHistory((prev) => [...prev, { content }]);
 
   const clearHistory = () => {
     setHistory([]);
   };
 
-  const deleteLastMessagePair = () => {
-    setHistory((prev) => {
-      const lastItem = last(prev);
-      if (lastItem && 'role' in lastItem && lastItem.role === 'model') {
-        return prev.slice(0, -2);
-      }
-      return prev;
-    });
-  };
-
   const deleteMessagePair = (i: number) => {
-    setHistory((prev) => prev.filter((_, index) => index !== i && index !== i - 1));
-  };
-
-  const getMessagePair = (i: number) => {
-    return [history[i - 1], history[i]] as Message[];
+    setHistory((prev) => prev.filter((_, index) => index !== i));
   };
 
   const exportHistory = () => {
-    const messages = (history.filter((item) => 'role' in item) as Message[]).map(
-      ({ role, content }) => {
-        if (role === 'user') return `---\n\n### ${content}`;
-        return `${content}`;
-      },
+    const messages = history.map(
+      ({ userMessage, modelMessage }) =>
+        `---\n\n### ${userMessage.content}\n\n${modelMessage?.content || ''}`,
     );
 
     if (repo && sourceContent && messages.length) {
@@ -130,14 +110,15 @@ ${sourceContent.content}`;
           { role: 'user', parts: [{ text: systemPrompt }] },
 
           // history messages
-          ...(history.filter((item) => 'role' in item) as Message[])
+          ...history
             // keep the last 2 pairs
-            .slice(-2 * 2)
+            .slice(-2)
             // convert to gemini api format
-            .map(({ role, content }) => ({
-              role,
-              parts: [{ text: content }],
-            })),
+            .map(({ userMessage, modelMessage }) => [
+              { role: 'user', parts: [{ text: userMessage.content }] },
+              { role: 'model', parts: [{ text: modelMessage?.content || '' }] },
+            ])
+            .flat(),
         ],
         generationConfig: {
           maxOutputTokens: 3000,
@@ -145,10 +126,9 @@ ${sourceContent.content}`;
         },
       });
 
+      let acc = '';
       try {
         const result = await chat.sendMessageStream(content);
-
-        let acc = '';
 
         for await (const chunk of result.stream) {
           let usage: Message['usage'] | undefined;
@@ -165,8 +145,7 @@ ${sourceContent.content}`;
           setPendingForResponse(false);
         }
       } catch (error) {
-        deleteLastMessagePair();
-        addSystemNote(`Error: ${String(error)}`);
+        setLastModelMessage(`${acc}\n---\n**Error: ${String(error)}**`);
       } finally {
         setPendingForResponse(false);
         setPendingForReply(false);
@@ -188,7 +167,6 @@ ${sourceContent.content}`;
     pendingForReply,
     clearHistory,
     deleteMessagePair,
-    getMessagePair,
     sendMessage,
     exportHistory,
   };

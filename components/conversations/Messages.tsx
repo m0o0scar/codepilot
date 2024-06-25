@@ -18,7 +18,7 @@ import {
     GithubRepoMessage, GithubRepoSourceFetchedMessage, GithubRepoSourceFetchingMessage
 } from './messages/GithubRepoMessages';
 import { SystemMessage } from './messages/SystemMessages';
-import { useChat } from './useChat';
+import { History, useChat } from './useChat';
 
 export const Messages: FC = () => {
   const {
@@ -30,7 +30,7 @@ export const Messages: FC = () => {
     zipLoadedSize = 0,
   } = useContext(GithubRepoContext) || {};
 
-  const [importedMessages, setImportedMessages] = useState<Message[] | undefined>();
+  const [importedMessages, setImportedMessages] = useState<History[] | undefined>();
 
   const {
     history,
@@ -39,7 +39,6 @@ export const Messages: FC = () => {
     sendMessage,
     clearHistory,
     exportHistory,
-    getMessagePair,
     deleteMessagePair,
   } = useChat(importedMessages);
 
@@ -131,12 +130,11 @@ export const Messages: FC = () => {
       .filter(Boolean)
       .map((l) => {
         const [question, ...answers] = l.split('\n\n');
-        return [
-          { role: 'user', content: question },
-          { role: 'model', content: answers.join('\n\n').trim() },
-        ] as Message[];
-      })
-      .flat();
+        return {
+          userMessage: { role: 'user', content: question },
+          modelMessage: { role: 'model', content: answers.join('\n\n').trim() },
+        } as History;
+      });
 
     if (setUrl?.(sourceUrl)) {
       if (messages.length) setImportedMessages(messages);
@@ -241,25 +239,22 @@ export const Messages: FC = () => {
 
               {/* message items */}
               {history.length > 0 &&
-                history.map((item, i) => {
-                  // normal chat message
-                  if ('role' in item) {
-                    const showFooter =
-                      item.role === 'model' && (i != history.length - 1 || !pendingForReply);
-                    return (
-                      <ChatMessage
-                        key={i}
-                        message={item}
-                        showFooter={showFooter}
-                        onDelete={() => deleteMessagePair(i)}
-                        onGetMessagePair={() => getMessagePair(i)}
-                      />
-                    );
-                  }
-                  // system note
-                  else {
-                    return <SystemMessage key={i} message={item} />;
-                  }
+                history.map(({ userMessage, modelMessage }, i) => {
+                  const showFooter = i != history.length - 1 || !pendingForReply;
+                  return (
+                    <>
+                      <ChatMessage key={i} message={userMessage} />
+                      {modelMessage && (
+                        <ChatMessage
+                          key={i}
+                          message={modelMessage}
+                          showFooter={showFooter}
+                          onDelete={() => deleteMessagePair(i)}
+                          onGetMessagePair={() => history[i]}
+                        />
+                      )}
+                    </>
+                  );
                 })}
 
               {/* conversation controls */}

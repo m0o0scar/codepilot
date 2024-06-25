@@ -5,12 +5,13 @@ import { Message } from '@components/llm/types';
 import { format } from '@utils/number';
 
 import { ChatBubble } from '../ChatBubble';
+import { History } from '../useChat';
 
 export interface ChatMessageProps {
   message: Message;
   showFooter?: boolean;
   onDelete?: () => void;
-  onGetMessagePair?: () => Message[];
+  onGetMessagePair?: () => History;
 }
 
 export const ChatMessage: FC<ChatMessageProps> = ({
@@ -44,7 +45,7 @@ export const ChatMessage: FC<ChatMessageProps> = ({
               onClick={async (e) => {
                 if (!onGetMessagePair) return;
 
-                const [userMessage, modelMessage] = onGetMessagePair();
+                const { userMessage, modelMessage } = onGetMessagePair();
                 if (modelMessage && userMessage) {
                   try {
                     const content = `# ${userMessage.content}\n\n${modelMessage.content}`;
