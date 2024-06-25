@@ -27,7 +27,7 @@ export const Markdown: FC<{ content?: string }> = ({ content }) => {
           if (language && language !== 'mermaid') {
             const code = String(children).replace(/\n$/, '').trim();
             return (
-              <div className="relative not-prose text-xs mx-[-12px] my-[-14px]">
+              <div className="relative not-prose text-xs mx-[-12px] my-[-14px] group/code">
                 <SyntaxHighlighter
                   {...rest}
                   // eslint-disable-next-line react/no-children-prop
@@ -37,7 +37,7 @@ export const Markdown: FC<{ content?: string }> = ({ content }) => {
                   wrapLongLines
                 />
 
-                <div className="absolute right-2 bottom-2 flex flex-row gap-1">
+                <div className="absolute right-2 bottom-2 flex flex-row gap-1 transition-opacity opacity-0 group-hover/code:opacity-100">
                   <button
                     className="btn btn-sm btn-square bg-opacity-45 border-none"
                     onClick={() =>
