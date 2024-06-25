@@ -12,7 +12,7 @@ export const config = {
   runtime: 'edge',
 };
 
-export const SOURCE_SCHEMA_VERSION = 11;
+export const SOURCE_SCHEMA_VERSION = 12;
 
 export type ResponseChunk =
   | { info?: GithubRepoInfo; error?: string }
@@ -130,6 +130,7 @@ export default async function handler(request: NextRequest) {
       const reader = new BlobReader(blob);
       const zipReader = new ZipReader(reader);
       const entries = await zipReader.getEntries();
+      const rootFolderNamePattern = new RegExp(`^${info.name}-${branch}\/`);
 
       // keep only source code files and markdowns
       const files = entries.filter((e) => {
@@ -161,16 +162,23 @@ export default async function handler(request: NextRequest) {
           const lines = rows.map((l) => l.trim()).filter(Boolean);
           numberOfLines += lines.length;
 
+          // add line numbers
           const lineNumberWidth = String(rows.length).length;
           const textWithLineNumbers = rows
             .map((line, i) => `${String(i + 1).padStart(lineNumberWidth)} ${line}`)
             .join('\n');
 
-          // create a code block
+          // get file ext name and full file path
           const ext = last(e.filename.split('.')) || '';
+          const filePath = e.filename.replace(
+            rootFolderNamePattern,
+            `${info.full_name}/blob/${branch}/`,
+          );
+
+          // create a code block
           const block = `${e.filename}:\n\n\`\`\`${ext}\n${textWithLineNumbers}\n\`\`\``;
 
-          return { filename: e.filename, block };
+          return { filePath, block };
         }),
       );
 
@@ -192,7 +200,7 @@ export default async function handler(request: NextRequest) {
       }
 
       // create directory tree
-      const filePaths = contents.map((e) => e.filename);
+      const filePaths = contents.map((e) => e.filePath);
       const tree = prettyTree(filePaths);
 
       // combine all source code

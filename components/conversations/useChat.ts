@@ -112,7 +112,7 @@ Take a deep breath and think step by step about how to best accomplish this goal
 
 # Output Instructions
 
-* ALWAYS cite the path to the relevant source code file (in markdown link format, for example: [\`<file name>\`](https://github.com/<owner>/<repo>/<file path>)), and quote relevant code snippets in your reply to support your answer.
+* ALWAYS cite the path to the relevant source code file (in markdown link format, for example: [\`<file name>\`](https://github.com/<owner>/<name>/blob/<branch>/<file path>)), and quote relevant code snippets in your reply to support your answer.
 * NEVER reply with large chunk or entire content of a file.
 
 # Input
