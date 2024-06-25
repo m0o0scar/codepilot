@@ -209,7 +209,7 @@ export const Messages: FC = () => {
             {!pendingForRepoSourceContent && sourceContentTooLarge && (
               <ChatBubble
                 isError
-              >{`Source code is too large (${format(sourceContent!.tokenLength)} tokens)`}</ChatBubble>
+              >{`Source code is too large (${format(sourceContent!.tokenLength)} tokens / ${format(sourceContent!.numberOfLines)} lines)`}</ChatBubble>
             )}
 
             {/* source code fetched */}

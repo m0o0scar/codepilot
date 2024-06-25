@@ -12,7 +12,7 @@ export const config = {
   runtime: 'edge',
 };
 
-export const SOURCE_SCHEMA_VERSION = 12;
+export const SOURCE_SCHEMA_VERSION = 13;
 
 export type ResponseChunk =
   | { info?: GithubRepoInfo; error?: string }
@@ -52,7 +52,9 @@ const excludeFilePattern = new RegExp(
     // common non-source files / folders
     /\.bak$/,
     /\/tests\//,
+    /\/examples\//,
     /\/benchmark\//,
+    /\/node_modules\//,
 
     // web
     /package-lock\.json$/,
