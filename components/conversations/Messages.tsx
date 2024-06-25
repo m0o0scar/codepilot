@@ -15,9 +15,7 @@ import { MessageInput } from './MessageInput';
 import { ChatMessage } from './messages/ChatMessages';
 import { PleaseProvideAPIKeyMessage } from './messages/GeminiMessages';
 import {
-  GithubRepoMessage,
-  GithubRepoSourceFetchedMessage,
-  GithubRepoSourceFetchingMessage,
+    GithubRepoMessage, GithubRepoSourceFetchedMessage, GithubRepoSourceFetchingMessage
 } from './messages/GithubRepoMessages';
 import { SystemMessage } from './messages/SystemMessages';
 import { useChat } from './useChat';
@@ -287,7 +285,7 @@ export const Messages: FC = () => {
             </>
           )}
 
-        {(fetchingRepoInfo || pendingForResponse) && (
+        {!pendingForApiKeys && (fetchingRepoInfo || pendingForResponse) && (
           <div className="text-center my-2">
             <span className="loading loading-dots loading-xs"></span>
           </div>

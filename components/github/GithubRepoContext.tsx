@@ -163,13 +163,13 @@ export const GithubRepoContextProvider: FC<{ children: ReactNode }> = ({ childre
   }, []);
 
   useEffect(() => {
-    if (url) {
+    if (!settingsContext?.pendingForApiKeys && url) {
       setRepo(undefined);
       fetchRepoContent();
     } else {
       reset();
     }
-  }, [url]);
+  }, [url, settingsContext?.pendingForApiKeys]);
 
   return (
     <GithubRepoContext.Provider
