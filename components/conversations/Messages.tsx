@@ -84,13 +84,14 @@ export const Messages: FC = () => {
         toast.error('Invalid Github repo url');
       }
     } else {
-      sendMessage(message);
+      // scroll to bottom if it's at or near the bottom
+      const doc = document.documentElement;
+      const shouldScrollToBottom = doc.scrollTop + window.innerHeight >= doc.scrollHeight - 50;
+      shouldScrollToBottom &&
+        setTimeout(() => doc.scrollTo({ top: doc.scrollHeight, behavior: 'smooth' }), 300);
 
-      setTimeout(() => {
-        // scroll to bottom
-        const doc = document.documentElement;
-        doc.scrollTo({ top: doc.scrollHeight, behavior: 'smooth' });
-      }, 200);
+      // send out the message
+      sendMessage(message);
     }
   };
 
