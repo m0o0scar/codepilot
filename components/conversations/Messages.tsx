@@ -16,7 +16,9 @@ import { MessageInput } from './MessageInput';
 import { ChatMessage } from './messages/ChatMessages';
 import { PleaseProvideAPIKeyMessage } from './messages/GeminiMessages';
 import {
-    GithubRepoMessage, GithubRepoSourceFetchedMessage, GithubRepoSourceFetchingMessage
+  GithubRepoMessage,
+  GithubRepoSourceFetchedMessage,
+  GithubRepoSourceFetchingMessage,
 } from './messages/GithubRepoMessages';
 import { History, useChat } from './useChat';
 
@@ -252,7 +254,12 @@ export const Messages: FC = () => {
                       {/* repo info, hidden until screenshot */}
                       <div className="repoInfo hidden group-[.screenshot]:flex flex-col m-4">
                         <div className="flex flex-row gap-1 items-center">
-                          <img src={repo!.owner.avatar_url} alt="avatar" width={30} />
+                          <img
+                            src={repo!.owner.avatar_url}
+                            alt="avatar"
+                            className="rounded-lg"
+                            width={30}
+                          />
                           <span>{repo!.owner.login} / </span>
                           <span>
                             <b>{repo!.name}</b>
