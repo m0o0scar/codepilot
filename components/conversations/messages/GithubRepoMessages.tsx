@@ -1,5 +1,6 @@
-import cls from 'classnames';
 /* eslint-disable @next/next/no-img-element */
+
+import cls from 'classnames';
 import { FC, useContext } from 'react';
 
 import { GithubRepoContext } from '@components/github/GithubRepoContext';
@@ -52,7 +53,7 @@ export const GithubRepoMessage: FC = () => {
 };
 
 export const GithubRepoSourceFetchingMessage: FC<{ loaded?: number }> = ({ loaded }) => {
-  let message = 'Fetching source code';
+  let message = '⏳ Fetching source code';
   if (loaded) message += ` (${formatFileSize(loaded)})`;
 
   return (
@@ -70,15 +71,35 @@ export const GithubRepoSourceFetchedMessage = () => {
   if (!repoContext?.sourceContent) return null;
 
   return (
-    <ChatBubble
-      footer={
-        <div className="badge badge-ghost badge-sm">
-          {format(repoContext.sourceContent.tokenLength)} tokens /{' '}
-          {format(repoContext.sourceContent.numberOfLines)} lines
+    <ChatBubble>
+      <div>✅ Source code fetched</div>
+
+      <div className="text-xs">
+        {/* number of tokens & lines */}
+        <div>
+          <span className="badge badge-xs badge-primary">
+            {format(repoContext.sourceContent.tokenLength)} tokens /{' '}
+            {format(repoContext.sourceContent.numberOfLines)} lines
+          </span>
         </div>
-      }
-    >
-      Source code fetched
+
+        {/* programming languages */}
+        <div>
+          {repoContext.sourceContent.languages.map((language, i) => (
+            <div key={language.name}>
+              <span
+                className={cls('badge badge-xs badge-success', { 'font-bold': i === 0 })}
+                style={{
+                  backgroundColor: `rgba(0, 169, 110, ${Math.max(0.1, language.percentage)})`,
+                }}
+              >
+                {language.name}
+              </span>{' '}
+              {(language.percentage * 100).toFixed(1)}%
+            </div>
+          ))}
+        </div>
+      </div>
     </ChatBubble>
   );
 };

@@ -104,6 +104,7 @@ export const GithubRepoContextProvider: FC<{ children: ReactNode }> = ({ childre
               content: '',
               tokenLength: 0,
               numberOfLines: 0,
+              languages: [],
               sourceVersion: '',
               schemaVersion: SOURCE_SCHEMA_VERSION,
               error: data.error,
@@ -138,6 +139,7 @@ export const GithubRepoContextProvider: FC<{ children: ReactNode }> = ({ childre
               content: data.content,
               tokenLength: data.tokens,
               numberOfLines: data.lines,
+              languages: data.languages,
               sourceVersion: info!.pushed_at,
               schemaVersion: SOURCE_SCHEMA_VERSION,
             };

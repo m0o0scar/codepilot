@@ -108,6 +108,11 @@ export interface GithubRepoInfo {
   subscribers_count: number;
 }
 
+export interface Language {
+  name: string;
+  percentage: number;
+}
+
 export interface GithubRepoContent {
   id: string;
 
@@ -116,6 +121,8 @@ export interface GithubRepoContent {
   content: string;
   tokenLength: number;
   numberOfLines: number;
+
+  languages: Language[];
 
   sourceVersion: string | number;
   schemaVersion: number;

@@ -2,9 +2,10 @@ import { last } from 'lodash';
 // @ts-ignore
 import prettyTree from 'pretty-file-tree';
 
-import { GithubRepoInfo } from '@components/github/types';
+import { GithubRepoInfo, Language } from '@components/github/types';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { fetchWithProgress } from '@utils/fetch';
+import { sendRequest } from '@utils/githubAPI';
 import { BlobReader, BlobWriter, ZipReader } from '@zip.js/zip.js';
 
 import type { NextRequest } from 'next/server';
@@ -12,12 +13,13 @@ export const config = {
   runtime: 'edge',
 };
 
-export const SOURCE_SCHEMA_VERSION = 14;
+export const SOURCE_SCHEMA_VERSION = 15;
 
 export type ResponseChunk =
-  | { info?: GithubRepoInfo; error?: string }
+  | { error: string }
+  | { info: GithubRepoInfo }
   | { zipLoaded: number }
-  | { tree: string; content: string; lines: number; tokens: number };
+  | { tree: string; content: string; lines: number; tokens: number; languages: Language[] };
 
 const includeFileExts = [
   // common files like documents or configs etc
@@ -104,17 +106,29 @@ export default async function handler(request: NextRequest) {
       };
 
       // get repo info like default branch, etc.
-      const infoResponse = await fetch(`https://api.github.com/repos/${owner}/${name}`, {
-        headers: {
-          Authorization: `Basic ${githubToken}`,
-        },
-      });
+      const infoResponse = await sendRequest(owner, name, '', githubToken);
       if (infoResponse.status !== 200) {
         sendError(`Failed to fetch repo info: ${await infoResponse.text()}`);
         return;
       }
       const info = (await infoResponse.json()) as GithubRepoInfo;
       sendChunk({ info });
+
+      // get repo languages
+      const languagesResponse = await sendRequest(owner, name, '/languages', githubToken);
+      if (languagesResponse.status !== 200) {
+        sendError(`Failed to fetch languages: ${await languagesResponse.text()}`);
+        return;
+      }
+      // calculate the percentage of each language
+      const languagesDict = (await languagesResponse.json()) as { [key: string]: number };
+      const totalBytes = Object.values(languagesDict).reduce((a, b) => a + b, 0);
+      const languages: Language[] = Object.entries(languagesDict)
+        .map(([key, value]) => ({
+          name: key,
+          percentage: value / totalBytes,
+        }))
+        .sort((a, b) => b.percentage - a.percentage);
 
       // use the branch name if provided from url,
       // otherwise use the default branch from fetched repo info.
@@ -214,7 +228,7 @@ export default async function handler(request: NextRequest) {
         .filter(Boolean)
         .join('\n\n');
 
-      sendChunk({ tree, content: concatted, lines: numberOfLines, tokens: tokenLength });
+      sendChunk({ tree, content: concatted, lines: numberOfLines, tokens: tokenLength, languages });
       controller.close();
     },
   });
