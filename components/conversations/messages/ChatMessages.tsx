@@ -1,10 +1,11 @@
-import { toPng } from 'html-to-image';
+import { toBlob } from 'html-to-image';
 import { FC } from 'react';
+import { isIOS } from 'react-device-detect';
 import { toast } from 'react-toastify';
 
 import { GithubRepoInfo } from '@components/github/types';
 import { Message } from '@components/llm/types';
-import { downloadUrl } from '@utils/file';
+import { downloadBlob } from '@utils/file';
 import { format } from '@utils/number';
 
 import { ChatBubble } from '../ChatBubble';
@@ -56,9 +57,17 @@ export const ChatMessage: FC<ChatMessageProps> = ({
       const el = document.getElementById(`message-${i}`);
       if (el) {
         el.classList.add('screenshot');
-        const dataUrl = await toPng(el);
+
         const filename = `[${repo.full_name}] ${userMessage.content}.png`;
-        downloadUrl(dataUrl, filename);
+        const blob = await toBlob(el);
+
+        if (isIOS && navigator.share) {
+          const file = new File([blob!], filename, { type: 'image/png' });
+          navigator.share({ files: [file] });
+        } else {
+          downloadBlob(blob!, filename);
+        }
+
         el.classList.remove('screenshot');
       }
     });
