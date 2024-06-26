@@ -69,7 +69,7 @@ export const ChatMessage: FC<ChatMessageProps> = ({
       message={message}
       footer={
         showFooter && (
-          <div className="flex flex-row gap-1 items-center group-[.screenshot]:hidden">
+          <div className="flex flex-row gap-1 items-center group-[.screenshot]:opacity-0">
             {/* token usage */}
             {message.usage && (
               <div className="badge badge-ghost badge-sm min-h-8 px-3">

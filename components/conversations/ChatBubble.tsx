@@ -45,7 +45,7 @@ export const ChatBubble: FC<ChatBubbleProps> = ({
       <div
         className={cls(
           // basic style, hide bubble tail
-          'chat-bubble text-sm min-h-5 w-auto md:!max-w-[90%] [&::before]:hidden',
+          'chat-bubble text-sm min-h-5 w-auto [&::before]:hidden',
           { 'cursor-pointer': onClick },
 
           // different color based on who send the message and whether there is error

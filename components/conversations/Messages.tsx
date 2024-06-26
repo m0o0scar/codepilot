@@ -257,6 +257,7 @@ export const Messages: FC = () => {
                           <span>
                             <b>{repo!.name}</b>
                           </span>
+                          <span>({format(sourceContent!.numberOfLines)} lines)</span>
                         </div>
                         <div className="text-sm opacity-40 underline">{url}</div>
                       </div>
