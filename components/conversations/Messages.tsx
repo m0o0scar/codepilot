@@ -32,10 +32,13 @@ export const Messages: FC = () => {
     zipLoadedSize = 0,
   } = useContext(GithubRepoContext) || {};
 
+  // messages imported from markdown file
   const [importedMessages, setImportedMessages] = useState<History[] | undefined>();
 
+  // chat
   const {
     history,
+    pendingMessageQueue,
     pendingForReply,
     pendingForResponse,
     sendMessage,
@@ -44,29 +47,36 @@ export const Messages: FC = () => {
     deleteMessagePair,
   } = useChat(importedMessages);
 
+  // setting context
   const { pending, pendingForApiKeys } = useContext(SettingsContext) || {};
+
+  // repo info & content fetching status
   const fetchingRepoInfo = url && !repo;
   const pendingForRepo = !repo;
   const pendingForRepoSourceContent = !sourceContent;
 
-  const shouldShowUploadButton = !pendingForApiKeys && (pendingForRepo || !history.length);
-
   // max token is 2M, leave 100K for conversation history
   const sourceContentTooLarge = sourceContent && sourceContent.tokenLength > 1_900_000;
 
+  // UI status:
+
+  // input box place holder
   let inputPlaceholder: string | undefined = undefined;
   if (pendingForApiKeys) inputPlaceholder = 'Google Vertex API key';
   else if (pendingForRepo) inputPlaceholder = 'Github repo url';
 
+  // should we disable input?
   let inputDisabled = false;
   if (
     pendingForApiKeys ||
     (!pendingForApiKeys && !pendingForRepo && pendingForRepoSourceContent) ||
     sourceContent?.error ||
-    sourceContentTooLarge ||
-    pendingForReply
+    sourceContentTooLarge
   )
     inputDisabled = true;
+
+  // should we show markdown file upload button?
+  const shouldShowUploadButton = !pendingForApiKeys && (pendingForRepo || !history.length);
 
   const onEnter = async (message: string) => {
     if (pendingForRepo) {
@@ -285,6 +295,16 @@ export const Messages: FC = () => {
                     </div>
                   );
                 })}
+
+              {pendingMessageQueue.length > 0 &&
+                pendingMessageQueue.map((message, i) => (
+                  <ChatMessage
+                    key={i}
+                    repo={repo!}
+                    message={{ role: 'user', content: message }}
+                    className="opacity-30"
+                  />
+                ))}
 
               {/* conversation controls */}
               <div className="flex flex-row justify-end gap-2 p-2">

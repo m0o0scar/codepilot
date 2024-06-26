@@ -27,7 +27,6 @@ export const MessageInput: FC<MessageInputProps> = ({
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       sendMessage();
-      (e.target as HTMLInputElement).blur();
     }
   };
 

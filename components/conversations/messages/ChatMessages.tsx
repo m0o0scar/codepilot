@@ -15,6 +15,7 @@ export interface ChatMessageProps {
   repo: GithubRepoInfo;
   message: Message;
   showFooter?: boolean;
+  className?: string;
   onDelete?: () => void;
   onGetMessagePair?: () => { i: number; pair: History };
 }
@@ -23,6 +24,7 @@ export const ChatMessage: FC<ChatMessageProps> = ({
   repo,
   message,
   showFooter,
+  className,
   onDelete,
   onGetMessagePair,
 }) => {
@@ -75,6 +77,7 @@ export const ChatMessage: FC<ChatMessageProps> = ({
 
   return (
     <ChatBubble
+      className={className}
       message={message}
       footer={
         showFooter && (

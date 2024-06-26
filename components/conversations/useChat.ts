@@ -21,6 +21,10 @@ export const useChat = (importedMessages?: History[]) => {
 
   const [history, setHistory] = useState<History[]>([]);
 
+  const [pendingMessageQueue, setPendingMessageQueue] = useState<string[]>([]);
+
+  const addToQueue = (message: string) => setPendingMessageQueue((prev) => [...prev, message]);
+
   const addUserMessage = (content: string) =>
     setHistory((prev) => [...prev, { userMessage: { role: 'user', content } }]);
 
@@ -40,6 +44,7 @@ export const useChat = (importedMessages?: History[]) => {
 
   const clearHistory = () => {
     setHistory([]);
+    setPendingMessageQueue([]);
   };
 
   const deleteMessagePair = (i: number) => {
@@ -71,14 +76,31 @@ ${messages.join('\n\n')}`;
     return null;
   };
 
+  const sendNextMessageInQueue = () => {
+    setPendingMessageQueue((pendingMessages) => {
+      const next = pendingMessages[0];
+      if (next) {
+        sendMessage(next);
+        return pendingMessages.slice(1);
+      }
+      return [];
+    });
+  };
+
   const sendMessage = async (content: string) => {
-    if (llmContext?.model && repo && sourceContent && !pendingForReply) {
-      setPendingForResponse(true);
-      setPendingForReply(true);
+    if (!llmContext?.model || !repo || !sourceContent) return;
 
-      addUserMessage(content);
+    if (pendingForReply) {
+      addToQueue(content);
+      return;
+    }
 
-      const systemPrompt = `# IDENTITY and PURPOSE
+    setPendingForResponse(true);
+    setPendingForReply(true);
+
+    addUserMessage(content);
+
+    const systemPrompt = `# IDENTITY and PURPOSE
 
 You are Code Pilot, an AI assistant designed to help developers understand and interact with their code. You have access to the source code of the project "${repo.name}" and its documentation. 
 
@@ -104,52 +126,53 @@ The following is the source code and documentation of project "${repo.name}":
 
 ${sourceContent.content}`;
 
-      const chat = llmContext.model.startChat({
-        history: [
-          // system prompt
-          { role: 'user', parts: [{ text: systemPrompt }] },
+    const chat = llmContext.model.startChat({
+      history: [
+        // system prompt
+        { role: 'user', parts: [{ text: systemPrompt }] },
 
-          // history messages
-          ...history
-            // keep the last 2 pairs
-            .slice(-2)
-            // convert to gemini api format
-            .map(({ userMessage, modelMessage }) => [
-              { role: 'user', parts: [{ text: userMessage.content }] },
-              { role: 'model', parts: [{ text: modelMessage?.content || '' }] },
-            ])
-            .flat(),
-        ],
-        generationConfig: {
-          maxOutputTokens: 3000,
-          temperature: 0,
-        },
-      });
+        // history messages
+        ...history
+          // keep the last 2 pairs
+          .slice(-2)
+          // convert to gemini api format
+          .map(({ userMessage, modelMessage }) => [
+            { role: 'user', parts: [{ text: userMessage.content }] },
+            { role: 'model', parts: [{ text: modelMessage?.content || '' }] },
+          ])
+          .flat(),
+      ],
+      generationConfig: {
+        maxOutputTokens: 3000,
+        temperature: 0,
+      },
+    });
 
-      let acc = '';
-      try {
-        const result = await chat.sendMessageStream(content);
+    let acc = '';
+    try {
+      const result = await chat.sendMessageStream(content);
 
-        for await (const chunk of result.stream) {
-          let usage: Message['usage'] | undefined;
-          if (chunk.usageMetadata) {
-            const { promptTokenCount: promptTokens, candidatesTokenCount: completionTokens } =
-              chunk.usageMetadata;
-            usage = { promptTokens, completionTokens };
-          }
-
-          const text = chunk.text();
-          acc += text;
-          setLastModelMessage(acc, usage);
-
-          setPendingForResponse(false);
+      for await (const chunk of result.stream) {
+        let usage: Message['usage'] | undefined;
+        if (chunk.usageMetadata) {
+          const { promptTokenCount: promptTokens, candidatesTokenCount: completionTokens } =
+            chunk.usageMetadata;
+          usage = { promptTokens, completionTokens };
         }
-      } catch (error) {
-        setLastModelMessage(`${acc}\n---\n**Error: ${String(error)}**`);
-      } finally {
+
+        const text = chunk.text();
+        acc += text;
+        setLastModelMessage(acc, usage);
+
         setPendingForResponse(false);
-        setPendingForReply(false);
       }
+    } catch (error) {
+      setLastModelMessage(`${acc}\n---\n**Error: ${String(error)}**`);
+    } finally {
+      setPendingForResponse(false);
+      setPendingForReply(false);
+
+      sendNextMessageInQueue();
     }
   };
 
@@ -163,6 +186,7 @@ ${sourceContent.content}`;
 
   return {
     history,
+    pendingMessageQueue,
     pendingForResponse,
     pendingForReply,
     clearHistory,
