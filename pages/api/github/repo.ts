@@ -51,6 +51,7 @@ const excludeFilePattern = new RegExp(
 
     // common non-source files / folders
     /\.bak$/,
+    /\/test\//,
     /\/tests\//,
     /\/examples\//,
     /\/benchmark\//,
