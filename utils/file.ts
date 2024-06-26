@@ -1,10 +1,14 @@
-export const downloadTextFile = (content: string, type: string, filename: string) => {
-  const blob = new Blob([content], { type });
-  const url = URL.createObjectURL(blob);
+export const downloadUrl = (url: string, filename: string) => {
   const a = document.createElement('a');
   a.download = filename;
   a.href = url;
   a.click();
+};
+
+export const downloadTextFile = (content: string, type: string, filename: string) => {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  downloadUrl(url, filename);
   URL.revokeObjectURL(url);
 };
 

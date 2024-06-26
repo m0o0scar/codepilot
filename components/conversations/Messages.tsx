@@ -1,10 +1,11 @@
+/* eslint-disable @next/next/no-img-element */
+import cls from 'classnames';
 import { last } from 'lodash';
 import { FC, useContext, useState } from 'react';
 import { isIOS } from 'react-device-detect';
 import { toast } from 'react-toastify';
 
 import { GithubRepoContext } from '@components/github/GithubRepoContext';
-import { Message } from '@components/llm/types';
 import { SettingsContext } from '@components/settings/SettingsContext';
 import { downloadTextFile } from '@utils/file';
 import { format } from '@utils/number';
@@ -15,9 +16,7 @@ import { MessageInput } from './MessageInput';
 import { ChatMessage } from './messages/ChatMessages';
 import { PleaseProvideAPIKeyMessage } from './messages/GeminiMessages';
 import {
-  GithubRepoMessage,
-  GithubRepoSourceFetchedMessage,
-  GithubRepoSourceFetchingMessage,
+    GithubRepoMessage, GithubRepoSourceFetchedMessage, GithubRepoSourceFetchingMessage
 } from './messages/GithubRepoMessages';
 import { History, useChat } from './useChat';
 
@@ -243,18 +242,39 @@ export const Messages: FC = () => {
                 history.map(({ userMessage, modelMessage }, i) => {
                   const showFooter = i != history.length - 1 || !pendingForReply;
                   return (
-                    <>
-                      <ChatMessage key={i} message={userMessage} />
+                    // container for wrapping the user & model message together,
+                    // so that later we can screenshot them both when user want to copy as image
+                    <div
+                      id={`message-${i}`}
+                      key={i}
+                      className={cls('flex flex-col bg-base-100 rounded-lg group')}
+                    >
+                      {/* repo info, hidden until screenshot */}
+                      <div className="repoInfo hidden group-[.screenshot]:flex flex-col m-4">
+                        <div className="flex flex-row gap-1 items-center">
+                          <img src={repo!.owner.avatar_url} alt="avatar" width={30} />
+                          <span>{repo!.owner.login} / </span>
+                          <span>
+                            <b>{repo!.name}</b>
+                          </span>
+                        </div>
+                        <div className="text-sm opacity-40 underline">{url}</div>
+                      </div>
+
+                      {/* user message */}
+                      <ChatMessage repo={repo!} message={userMessage} />
+
+                      {/* model message */}
                       {modelMessage && (
                         <ChatMessage
-                          key={i}
+                          repo={repo!}
                           message={modelMessage}
                           showFooter={showFooter}
                           onDelete={() => deleteMessagePair(i)}
-                          onGetMessagePair={() => history[i]}
+                          onGetMessagePair={() => ({ i, pair: history[i] })}
                         />
                       )}
-                    </>
+                    </div>
                   );
                 })}
 
