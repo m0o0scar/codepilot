@@ -223,7 +223,7 @@ export const Messages: FC = () => {
                     content="How does it work?"
                     onClick={() =>
                       sendMessage(
-                        'Explain what this project do how it works by referencing the most important code snippets.',
+                        'Explain what this project do and how it works by referencing the most important code snippets.',
                       )
                     }
                   />
