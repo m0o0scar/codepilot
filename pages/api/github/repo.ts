@@ -12,7 +12,7 @@ export const config = {
   runtime: 'edge',
 };
 
-export const SOURCE_SCHEMA_VERSION = 13;
+export const SOURCE_SCHEMA_VERSION = 14;
 
 export type ResponseChunk =
   | { info?: GithubRepoInfo; error?: string }
