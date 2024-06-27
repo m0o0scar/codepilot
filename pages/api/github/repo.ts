@@ -1,12 +1,8 @@
-import { last } from 'lodash';
-// @ts-ignore
-import prettyTree from 'pretty-file-tree';
-
 import { GithubRepoInfo, Language } from '@components/github/types';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { fetchWithProgress } from '@utils/fetch';
-import { sendRequest } from '@utils/githubAPI';
-import { BlobReader, BlobWriter, ZipReader } from '@zip.js/zip.js';
+import { GithubApiClient } from '@utils/githubAPI';
+import { excludeFilePattern, includeFileExts, readSourceFileContents } from '@utils/sourceCode';
+import { unzip } from '@utils/zip';
 
 import type { NextRequest } from 'next/server';
 export const config = {
@@ -20,58 +16,6 @@ export type ResponseChunk =
   | { info: GithubRepoInfo }
   | { zipLoaded: number }
   | { tree: string; content: string; lines: number; tokens: number; languages: Language[] };
-
-const includeFileExts = [
-  // common files like documents or configs etc
-  'md',
-  'json',
-  'yaml',
-  'toml',
-
-  // web
-  'js',
-  'mjs',
-  'jsx',
-  'ts',
-  'tsx',
-  'html',
-
-  // python
-  'py',
-
-  // Rust
-  'rs',
-
-  // Flutter
-  'dart',
-];
-
-const excludeFilePattern = new RegExp(
-  [
-    // any file or folder that starts with .
-    /\/\./,
-
-    // common non-source files / folders
-    /\.bak$/,
-    /\/.*?test\//,
-    /\/.*?tests\//,
-    /\/examples\//,
-    /\/benchmark\//,
-    /\/node_modules\//,
-
-    // web
-    /package-lock\.json$/,
-    /\.eslintrc\.json$/,
-    /\.min\.js$/,
-    /\/build\//,
-    /\/dist\//,
-
-    // python
-    /\.lock$/,
-  ]
-    .map((regex) => regex.source)
-    .join('|'),
-);
 
 export default async function handler(request: NextRequest) {
   // get github token from header
@@ -105,25 +49,26 @@ export default async function handler(request: NextRequest) {
         controller.close();
       };
 
+      const githubClient = new GithubApiClient(githubToken, owner, name);
+
       // get repo info like default branch, etc.
-      const infoResponse = await sendRequest(owner, name, '', githubToken);
-      if (infoResponse.status !== 200) {
-        sendError(`Failed to fetch repo info: ${await infoResponse.text()}`);
+      const infoResponse = await githubClient.fetchInfo();
+      if ('errorStatus' in infoResponse) {
+        sendError(`Failed to fetch repo info: ${infoResponse.errorMessage}`);
         return;
       }
-      const info = (await infoResponse.json()) as GithubRepoInfo;
+      const info = infoResponse.data;
       sendChunk({ info });
 
       // get repo languages
-      const languagesResponse = await sendRequest(owner, name, '/languages', githubToken);
-      if (languagesResponse.status !== 200) {
-        sendError(`Failed to fetch languages: ${await languagesResponse.text()}`);
+      const languagesResponse = await githubClient.fetchLanguages();
+      if ('errorStatus' in languagesResponse) {
+        sendError(`Failed to fetch languages: ${languagesResponse.errorMessage}`);
         return;
       }
       // calculate the percentage of each language
-      const languagesDict = (await languagesResponse.json()) as { [key: string]: number };
-      const totalBytes = Object.values(languagesDict).reduce((a, b) => a + b, 0);
-      const languages: Language[] = Object.entries(languagesDict)
+      const totalBytes = Object.values(languagesResponse.data).reduce((a, b) => a + b, 0);
+      const languages: Language[] = Object.entries(languagesResponse.data)
         .map(([key, value]) => ({
           name: key,
           percentage: value / totalBytes,
@@ -135,70 +80,21 @@ export default async function handler(request: NextRequest) {
       const branch = _branch || info.default_branch;
 
       // if path is given in url, then later after zip file is unzipped, keep only those files that start with the path
-      const scope = _path.length ? `${info?.name}-${branch}/${path}` : null;
+      const scope = _path.length ? `${info?.name}-${branch}/${path}` : undefined;
 
-      // construct the url to download the zip file
-      const zipUrl = `https://github.com/${info.full_name}/archive/refs/heads/${branch}.zip`;
-      const blob = await fetchWithProgress(zipUrl, (zipLoaded) => sendChunk({ zipLoaded }));
+      // download the zip file
+      const blob = await githubClient.downloadZip(branch, (zipLoaded) => sendChunk({ zipLoaded }));
 
       // unzip the file
-      const reader = new BlobReader(blob);
-      const zipReader = new ZipReader(reader);
-      const entries = await zipReader.getEntries();
+      const files = await unzip(blob, { includeFileExts, excludeFilePattern, scope });
+
+      // read source code content
       const rootFolderNamePattern = new RegExp(`^${info.name}-${branch}\/`);
-
-      // keep only source code files and markdowns
-      const files = entries.filter((e) => {
-        if (e.directory) return false;
-
-        // include files with these extensions
-        const ext = last(e.filename.split('.')) || '';
-        if (!includeFileExts.includes(ext)) return false;
-
-        // ignore these files:
-        if (e.filename.match(excludeFilePattern)) return false;
-
-        // ignore files that do not start with the scope
-        if (scope && !e.filename.startsWith(scope)) return false;
-
-        return true;
-      });
-
-      // read file contents
-      let numberOfLines = 0;
-      const contents = await Promise.all(
-        files.map(async (e) => {
-          // read file content
-          const blob = await e.getData!(new BlobWriter());
-          const text = new TextDecoder().decode(await blob.arrayBuffer());
-          const rows = text.split('\n');
-
-          // calculate the number of lines
-          const lines = rows.map((l) => l.trim()).filter(Boolean);
-          numberOfLines += lines.length;
-
-          // add line numbers
-          const lineNumberWidth = String(rows.length).length;
-          const textWithLineNumbers = rows
-            .map((line, i) => `${String(i + 1).padStart(lineNumberWidth)} ${line}`)
-            .join('\n');
-
-          // get file ext name and full file path
-          const ext = last(e.filename.split('.')) || '';
-          const filePath = e.filename.replace(
-            rootFolderNamePattern,
-            `${info.full_name}/blob/${branch}/`,
-          );
-
-          // create a code block
-          const block = `${e.filename}:\n\n\`\`\`${ext}\n${textWithLineNumbers}\n\`\`\``;
-
-          return { filePath, block };
-        }),
-      );
-
-      // combine all source code
-      const sourceCode = contents.map(({ block }) => block).join('\n\n');
+      const { tree, contents, totalNumberOfLines, combinedSourceCode } =
+        await readSourceFileContents(files, {
+          processFileName: async (name) =>
+            name.replace(rootFolderNamePattern, `${info.full_name}/blob/${branch}/`),
+        });
 
       // prepare gemini model
       const genAI = new GoogleGenerativeAI(geminiToken);
@@ -207,28 +103,30 @@ export default async function handler(request: NextRequest) {
       // calculate token length and cost based on all combined source code
       let tokenLength = 0;
       try {
-        const { totalTokens } = await model.countTokens(sourceCode);
+        const { totalTokens } = await model.countTokens(combinedSourceCode);
         tokenLength = totalTokens;
       } catch (error) {
         sendError(`Failed to count tokens: ${String(error)}`);
         return;
       }
 
-      // create directory tree
-      const filePaths = contents.map((e) => e.filePath);
-      const tree = prettyTree(filePaths);
-
       // combine all source code
       const concatted = [
         `Project: ${info.full_name}`,
         `URL: ${url}`,
         `Source tree:\n\n\`\`\`\n${tree}\n\`\`\``,
-        sourceCode,
+        combinedSourceCode,
       ]
         .filter(Boolean)
         .join('\n\n');
 
-      sendChunk({ tree, content: concatted, lines: numberOfLines, tokens: tokenLength, languages });
+      sendChunk({
+        tree,
+        content: concatted,
+        lines: totalNumberOfLines,
+        tokens: tokenLength,
+        languages,
+      });
       controller.close();
     },
   });
