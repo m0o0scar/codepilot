@@ -16,9 +16,7 @@ import { MessageInput } from './MessageInput';
 import { ChatMessage } from './messages/ChatMessages';
 import { PleaseProvideAPIKeyMessage } from './messages/GeminiMessages';
 import {
-  GithubRepoMessage,
-  GithubRepoSourceFetchedMessage,
-  GithubRepoSourceFetchingMessage,
+    GithubRepoMessage, GithubRepoSourceFetchedMessage, GithubRepoSourceFetchingMessage
 } from './messages/GithubRepoMessages';
 import { History, useChat } from './useChat';
 
@@ -266,16 +264,17 @@ export const Messages: FC = () => {
                       <div className="repoInfo hidden group-[.screenshot]:flex flex-col m-4">
                         <div className="flex flex-row gap-1 items-center">
                           <img
-                            src={repo!.owner.avatar_url}
+                            src={`/api/proxy?dest=${encodeURIComponent(repo!.owner.avatar_url)}`}
                             alt="avatar"
                             className="rounded-lg"
                             width={30}
                           />
-                          <span>{repo!.owner.login} / </span>
-                          <span>
-                            <b>{repo!.name}</b>
+                          <span className="truncate">
+                            {repo!.owner.login} / <b>{repo!.name}</b>{' '}
+                            <small>
+                              <i>({format(sourceContent!.numberOfLines)} lines)</i>
+                            </small>
                           </span>
-                          <span>({format(sourceContent!.numberOfLines)} lines)</span>
                         </div>
                         <div className="text-sm opacity-40 underline">{url}</div>
                       </div>
