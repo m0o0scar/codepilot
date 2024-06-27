@@ -2,11 +2,12 @@ import { last } from 'lodash';
 // @ts-ignore
 import prettyTree from 'pretty-file-tree';
 
+import { ProcessSourceCodeResponse } from '@pages/api/github/processSourceCode';
 import { BlobWriter, Entry } from '@zip.js/zip.js';
 
 export const includeFileExts = [
   // common files like documents or configs etc
-  'md',
+  // 'md',
   'json',
   'yaml',
   'toml',
@@ -71,36 +72,44 @@ export const readSourceFileContents = async (
     files.map(async (e) => {
       // read file content
       const blob = await e.getData!(new BlobWriter());
-      const raw = new TextDecoder().decode(await blob.arrayBuffer());
+      const text = new TextDecoder().decode(await blob.arrayBuffer());
 
       // calculate the number of lines
-      const lines = raw
+      const lines = text
         .split('\n')
         .map((l) => l.trim())
         .filter(Boolean);
       totalNumberOfLines += lines.length;
 
-      // TODO remove function implementation
-      // TODO add line numbers to the source code
-      const text = raw;
-
       // get file ext name and full file path
       const ext = last(e.filename.split('.')) || '';
       const filename = processFileName ? await processFileName(e.filename) : e.filename;
 
-      // create a code block
-      const block = `${filename}:\n\n\`\`\`${ext}\n${text}\n\`\`\``;
-
-      return { filename, block, text };
+      return { ext, filename, text };
     }),
   );
+
+  const processed: ProcessSourceCodeResponse = await fetch(
+    'http://localhost:3000/api/github/processSourceCode',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        files: contents,
+      }),
+    },
+  ).then((res) => res.json());
 
   // create directory tree
   const filePaths = contents.map((e) => e.filename);
   const tree = prettyTree(filePaths);
 
   // combine all source code
-  const combinedSourceCode = contents.map(({ block }) => block).join('\n\n');
+  const combinedSourceCode = contents
+    .map(
+      ({ ext, filename }, i) =>
+        `${filename}:\n\n\`\`\`${ext}\n${processed.result[i].processed}\n\`\`\``,
+    )
+    .join('\n\n');
 
   return {
     tree,

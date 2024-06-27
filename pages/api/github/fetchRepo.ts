@@ -9,7 +9,7 @@ export const config = {
   runtime: 'edge',
 };
 
-export const SOURCE_SCHEMA_VERSION = 15;
+export const SOURCE_SCHEMA_VERSION = 16;
 
 export type ResponseChunk =
   | { error: string }
@@ -49,38 +49,24 @@ export default async function handler(request: NextRequest) {
         controller.close();
       };
 
+      // get repo info like default branch, laguages, etc.
       const githubClient = new GithubApiClient(githubToken, owner, name);
+      try {
+        await githubClient.fetchInfo();
+        sendChunk({ info: githubClient.info! });
 
-      // get repo info like default branch, etc.
-      const infoResponse = await githubClient.fetchInfo();
-      if ('errorStatus' in infoResponse) {
-        sendError(`Failed to fetch repo info: ${infoResponse.errorMessage}`);
+        await githubClient.fetchLanguages();
+      } catch (error) {
+        sendError(String(error));
         return;
       }
-      const info = infoResponse.data;
-      sendChunk({ info });
-
-      // get repo languages
-      const languagesResponse = await githubClient.fetchLanguages();
-      if ('errorStatus' in languagesResponse) {
-        sendError(`Failed to fetch languages: ${languagesResponse.errorMessage}`);
-        return;
-      }
-      // calculate the percentage of each language
-      const totalBytes = Object.values(languagesResponse.data).reduce((a, b) => a + b, 0);
-      const languages: Language[] = Object.entries(languagesResponse.data)
-        .map(([key, value]) => ({
-          name: key,
-          percentage: value / totalBytes,
-        }))
-        .sort((a, b) => b.percentage - a.percentage);
 
       // use the branch name if provided from url,
       // otherwise use the default branch from fetched repo info.
-      const branch = _branch || info.default_branch;
+      const branch = _branch || githubClient.info!.default_branch;
 
       // if path is given in url, then later after zip file is unzipped, keep only those files that start with the path
-      const scope = _path.length ? `${info?.name}-${branch}/${path}` : undefined;
+      const scope = _path.length ? `${name}-${branch}/${path}` : undefined;
 
       // download the zip file
       const blob = await githubClient.downloadZip(branch, (zipLoaded) => sendChunk({ zipLoaded }));
@@ -89,11 +75,11 @@ export default async function handler(request: NextRequest) {
       const files = await unzip(blob, { includeFileExts, excludeFilePattern, scope });
 
       // read source code content
-      const rootFolderNamePattern = new RegExp(`^${info.name}-${branch}\/`);
+      const rootFolderNamePattern = new RegExp(`^${name}-${branch}\/`);
       const { tree, contents, totalNumberOfLines, combinedSourceCode } =
         await readSourceFileContents(files, {
-          processFileName: async (name) =>
-            name.replace(rootFolderNamePattern, `${info.full_name}/blob/${branch}/`),
+          processFileName: async (filename) =>
+            filename.replace(rootFolderNamePattern, `${owner}/${name}/blob/${branch}/`),
         });
 
       // prepare gemini model
@@ -112,7 +98,7 @@ export default async function handler(request: NextRequest) {
 
       // combine all source code
       const concatted = [
-        `Project: ${info.full_name}`,
+        `Project: ${owner}/${name}`,
         `URL: ${url}`,
         `Source tree:\n\n\`\`\`\n${tree}\n\`\`\``,
         combinedSourceCode,
@@ -125,7 +111,7 @@ export default async function handler(request: NextRequest) {
         content: concatted,
         lines: totalNumberOfLines,
         tokens: tokenLength,
-        languages,
+        languages: githubClient.languages!,
       });
       controller.close();
     },
