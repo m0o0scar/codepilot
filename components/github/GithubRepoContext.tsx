@@ -1,7 +1,7 @@
 import { createContext, FC, ReactNode, useContext, useEffect, useState } from 'react';
 
 import { SettingsContext } from '@components/settings/SettingsContext';
-import { ResponseChunk, SOURCE_SCHEMA_VERSION } from '@pages/api/github/repo';
+import { ResponseChunk, SOURCE_SCHEMA_VERSION } from '@pages/api/github/fetchRepo';
 import { del, get, put } from '@utils/storage';
 
 import { GithubRepoContent, GithubRepoInfo } from './types';
@@ -74,7 +74,7 @@ export const GithubRepoContextProvider: FC<{ children: ReactNode }> = ({ childre
 
     // send request to server
     const abortController = new AbortController();
-    const response = await fetch(`/api/github/repo?url=${encodeURIComponent(url)}`, {
+    const response = await fetch(`/api/github/fetchRepo?url=${encodeURIComponent(url)}`, {
       method: 'POST',
       headers: {
         'x-gemini-token': googleVertexApiKey,
