@@ -143,7 +143,6 @@ export const GithubRepoContextProvider: FC<{ children: ReactNode }> = ({ childre
               sourceVersion: info!.pushed_at,
               schemaVersion: SOURCE_SCHEMA_VERSION,
             };
-            console.log(sourceContent.tree);
             put(key, sourceContent);
             setSourceContent(sourceContent);
           }
@@ -172,6 +171,12 @@ export const GithubRepoContextProvider: FC<{ children: ReactNode }> = ({ childre
       reset();
     }
   }, [url, settingsContext?.pendingForApiKeys]);
+
+  useEffect(() => {
+    if (sourceContent) {
+      console.log(sourceContent.content);
+    }
+  }, [sourceContent]);
 
   return (
     <GithubRepoContext.Provider
