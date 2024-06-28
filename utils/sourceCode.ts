@@ -41,13 +41,14 @@ export const excludeFilePattern = new RegExp(
     /\/examples\//,
     /\/benchmark\//,
     /\/node_modules\//,
+    /\/build\//,
+    /\/dist\//,
+    /\/bin\//,
 
     // web
     /package-lock\.json$/,
     /\.eslintrc\.json$/,
     /\.min\.js$/,
-    /\/build\//,
-    /\/dist\//,
 
     // python
     /\.lock$/,
