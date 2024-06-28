@@ -53,7 +53,7 @@ export const GithubRepoContextProvider: FC<{ children: ReactNode }> = ({ childre
 
     const { githubClientId, githubClientSecret, googleVertexApiKey } =
       settingsContext?.settings || {};
-    if (!url || !googleVertexApiKey || !githubClientId || !githubClientSecret) return;
+    if (!url || !googleVertexApiKey) return;
 
     /**
      * https://github.com
@@ -72,14 +72,19 @@ export const GithubRepoContextProvider: FC<{ children: ReactNode }> = ({ childre
     let key = `repo-content-${id}`;
     if (path) key += `-${path}`;
 
-    // send request to server
     const abortController = new AbortController();
+
+    // prepare headers
+    const headers = new Headers();
+    headers.set('x-gemini-token', googleVertexApiKey);
+    if (githubClientId && githubClientSecret) {
+      headers.set('x-github-token', btoa(`${githubClientId}:${githubClientSecret}`));
+    }
+
+    // send request to server
     const response = await fetch(`/api/github/fetchRepo?url=${encodeURIComponent(url)}`, {
       method: 'POST',
-      headers: {
-        'x-gemini-token': googleVertexApiKey,
-        'x-github-token': btoa(`${githubClientId}:${githubClientSecret}`),
-      },
+      headers,
       signal: abortController.signal,
     });
 

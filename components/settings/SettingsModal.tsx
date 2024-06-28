@@ -89,7 +89,7 @@ export const SettingsModal = () => {
             <div className="flex flex-col gap-2">
               <p className="my-2 font-bold">Google Gemini</p>
               <SettingsModalInput
-                label="API key"
+                label="API Key *"
                 hook={geminiApiKey}
                 footer={<GeminiApiKeyInputFooter />}
               />

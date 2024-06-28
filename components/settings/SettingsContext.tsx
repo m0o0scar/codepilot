@@ -27,8 +27,7 @@ export const SettingsContextProvider: FC<{ children: ReactNode }> = ({ children 
 
   const [settings, _setSettings] = useState<Settings>({});
 
-  const pendingForApiKeys =
-    !settings.googleVertexApiKey || !settings.githubClientId || !settings.githubClientSecret;
+  const pendingForApiKeys = !settings.googleVertexApiKey;
 
   const setSetting = (key: keyof Settings, value: Settings[keyof Settings]) => {
     _setSettings((prev) => ({ ...prev, [key]: value }));

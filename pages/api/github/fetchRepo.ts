@@ -19,9 +19,8 @@ export type ResponseChunk =
 
 export default async function handler(request: NextRequest) {
   // get github token from header
-  const githubToken = request.headers.get('x-github-token');
+  const githubToken = request.headers.get('x-github-token') || undefined;
   const geminiToken = request.headers.get('x-gemini-token');
-  if (!githubToken) return new Response('github credential is required', { status: 400 });
   if (!geminiToken) return new Response('gemini credential is required', { status: 400 });
 
   // get url from query
@@ -50,7 +49,7 @@ export default async function handler(request: NextRequest) {
       };
 
       // get repo info like default branch, laguages, etc.
-      const githubClient = new GithubApiClient(githubToken, owner, name);
+      const githubClient = new GithubApiClient(owner, name, githubToken);
       try {
         await githubClient.fetchInfo();
         sendChunk({ info: githubClient.info! });

@@ -3,14 +3,14 @@ import { GithubRepoInfo, Language } from '@components/github/types';
 import { fetchWithProgress } from './fetch';
 
 export class GithubApiClient {
-  private apiToken: string;
+  private apiToken?: string;
   readonly owner: string;
   readonly name: string;
 
   info?: GithubRepoInfo;
   languages?: Language[];
 
-  constructor(apiToken: string, owner: string, name: string) {
+  constructor(owner: string, name: string, apiToken?: string) {
     this.apiToken = apiToken;
     this.owner = owner;
     this.name = name;
@@ -19,13 +19,10 @@ export class GithubApiClient {
   private sendRequest = async <T>(path: string, init?: RequestInit): Promise<T> => {
     const url = `https://api.github.com/repos/${this.owner}/${this.name}${path}`;
 
-    const response = await fetch(url, {
-      ...init,
-      headers: {
-        ...init?.headers,
-        Authorization: `Basic ${this.apiToken}`,
-      },
-    });
+    const headers: HeadersInit = new Headers(init?.headers);
+    if (this.apiToken) headers.set('Authorization', `Basic ${this.apiToken}`);
+
+    const response = await fetch(url, { ...init, headers });
 
     if (response.status !== 200) {
       throw new Error(await response.text());
