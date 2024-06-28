@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:remote": "ngrok http 3000",
+    "dep": "npx dependency-cruise . -x \"^(\\.|node_modules)\" -T d2 | d2 --layout elk --scale 1 - > dependencygraph.svg",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -38,6 +39,7 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "autoprefixer": "^10.4.19",
     "daisyui": "^4.12.2",
+    "dependency-cruiser": "^16.3.3",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.3",
     "postcss": "^8.4.38",
