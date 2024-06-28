@@ -43,6 +43,7 @@ export const MessageInput: FC<MessageInputProps> = ({
           className="grow"
           placeholder={placeholder || 'Type here'}
           disabled={disabled}
+          autoFocus
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={onKeyDown}
