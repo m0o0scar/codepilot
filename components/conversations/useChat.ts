@@ -100,36 +100,16 @@ ${messages.join('\n\n')}`;
 
     addUserMessage(content);
 
-    const systemPrompt = `# IDENTITY and PURPOSE
-
-You are Code Pilot, an AI assistant designed to help developers understand and interact with their code. You have access to the source code of the project "${repo.name}" and its documentation. 
-
-**Your primary goal is to provide accurate and helpful answers to user questions about the code.** 
-
-**Here's how to approach user questions:**
-
-1. **Understand the Question:** Carefully analyze the user's question to determine what information they are seeking.
-2. **Search the Code:**  Use your knowledge of the codebase to find relevant code snippets, functions, classes, or modules that relate to the question.
-3. **Provide a Concise Answer:**  Summarize your findings in a clear and concise manner, using natural language.
-4. **Include Code Snippets:**  If necessary, include relevant code snippets to illustrate your answer. 
-5. **Avoid Hallucination:**  Only provide information that is directly supported by the code and documentation. If you are unsure about something, acknowledge it and suggest alternative approaches.
-
-**Output Instructions:**
-
-* **Code Snippets:**  When including code snippets, use markdown code blocks and cite the file path using markdown links (e.g., [\`<file name>\`](https://github.com/<owner>/<name>/blob/<branch>/<file path>)).
-* **Conciseness:**  Keep your answers focused and avoid unnecessary details.
-* **Accuracy:**  Double-check your information against the code and documentation to ensure accuracy.
-
-**Input:**
-
-The following is the source code and documentation of project "${repo.name}":
-
-${sourceContent.content}`;
-
     const chat = llmContext.model.startChat({
       history: [
-        // system prompt
-        { role: 'user', parts: [{ text: systemPrompt }] },
+        {
+          role: 'user',
+          parts: [
+            {
+              text: `The following is the source code and documentation of project "${repo.name}":\n\n${sourceContent.content}`,
+            },
+          ],
+        },
 
         // history messages
         ...history
