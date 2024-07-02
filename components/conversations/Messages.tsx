@@ -16,9 +16,15 @@ import { MessageInput } from './MessageInput';
 import { ChatMessage } from './messages/ChatMessages';
 import { PleaseProvideAPIKeyMessage } from './messages/GeminiMessages';
 import {
-    GithubRepoMessage, GithubRepoSourceFetchedMessage, GithubRepoSourceFetchingMessage
+  GithubRepoMessage,
+  GithubRepoSourceFetchedMessage,
+  GithubRepoSourceFetchingMessage,
 } from './messages/GithubRepoMessages';
 import { History, useChat } from './useChat';
+
+const TOKENS_MAX = 1_000_000;
+const TOKENS_RESERVE_FOR_CONVERSATION = 10_000;
+const SOURCE_CONTENT_MAX = TOKENS_MAX - TOKENS_RESERVE_FOR_CONVERSATION;
 
 export const Messages: FC = () => {
   const {
@@ -53,8 +59,8 @@ export const Messages: FC = () => {
   const pendingForRepo = !repo;
   const pendingForRepoSourceContent = !sourceContent;
 
-  // max token is 2M, leave 100K for conversation history
-  const sourceContentTooLarge = sourceContent && sourceContent.tokenLength > 1_900_000;
+  // max token is 1M, leave 100K for conversation history
+  const sourceContentTooLarge = sourceContent && sourceContent.tokenLength > SOURCE_CONTENT_MAX;
 
   // UI status:
 
