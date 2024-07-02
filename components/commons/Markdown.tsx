@@ -15,7 +15,7 @@ export const Markdown: FC<{ content?: string }> = ({ content }) => {
     <ReactMarkdown
       // eslint-disable-next-line react/no-children-prop
       children={content}
-      className="prose prose-sm max-w-full"
+      className="markdown prose prose-sm max-w-full"
       remarkPlugins={[remarkGfm]}
       rehypePlugins={[[rehypeExternalLinks, { target: '_blank' }]]}
       components={{

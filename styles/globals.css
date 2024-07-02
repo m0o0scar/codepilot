@@ -19,3 +19,7 @@ h5,
 h6 {
   margin: 0 !important;
 }
+
+.markdown hr {
+  margin: 10px 0;
+}
