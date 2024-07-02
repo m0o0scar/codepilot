@@ -1,7 +1,7 @@
 import { GithubRepoInfo, Language } from '@components/github/types';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { GithubApiClient } from '@utils/githubAPI';
-import { excludeFilePattern, includeFileExts, readSourceFileContents } from '@utils/sourceCode';
+import { excludeFilePattern, includeFilePattern, readSourceFileContents } from '@utils/sourceCode';
 import { unzip } from '@utils/zip';
 
 import type { NextRequest } from 'next/server';
@@ -71,7 +71,7 @@ export default async function handler(request: NextRequest) {
       const blob = await githubClient.downloadZip(branch, (zipLoaded) => sendChunk({ zipLoaded }));
 
       // unzip the file
-      const files = await unzip(blob, { includeFileExts, excludeFilePattern, scope });
+      const files = await unzip(blob, { includeFilePattern, excludeFilePattern, scope });
 
       // read source code content
       const rootFolderNamePattern = new RegExp(`^${name}-${branch}\/`);

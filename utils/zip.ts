@@ -6,7 +6,7 @@ export const unzip = async (
   blob: Blob,
   options?: {
     // file extensions that you want to include in the unzipped files
-    includeFileExts?: string[];
+    includeFilePattern?: RegExp;
 
     // file patterns that you want to exclude from the unzipped files
     excludeFilePattern?: RegExp;
@@ -15,7 +15,7 @@ export const unzip = async (
     scope?: string;
   },
 ) => {
-  const { includeFileExts, excludeFilePattern, scope } = options || {};
+  const { includeFilePattern, excludeFilePattern, scope } = options || {};
 
   // unzip into entries
   const reader = new BlobReader(blob);
@@ -26,11 +26,10 @@ export const unzip = async (
   const files = entries.filter((e) => {
     if (e.directory) return false;
 
-    // include files with these extensions
-    const ext = last(e.filename.split('.')) || '';
-    if (includeFileExts && !includeFileExts.includes(ext)) return false;
+    // ignore files NOT matching include pattern
+    if (includeFilePattern && !e.filename.match(includeFilePattern)) return false;
 
-    // ignore these files:
+    // ignore files matching exclude pattern
     if (excludeFilePattern && e.filename.match(excludeFilePattern)) return false;
 
     // ignore files that do not start with the scope

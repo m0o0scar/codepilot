@@ -4,30 +4,19 @@ import prettyTree from 'pretty-file-tree';
 
 import { BlobWriter, Entry } from '@zip.js/zip.js';
 
-export const includeFileExts = [
-  // common files like documents or configs etc
-  'md',
-  'json',
-  'yaml',
-  'toml',
+export const includeFilePattern = new RegExp(
+  [
+    /README\.md$/,
 
-  // web
-  'js',
-  'mjs',
-  'jsx',
-  'ts',
-  'tsx',
-  'html',
+    // web
+    /\.(js|mjs|jsx|ts|tsx|html|json)$/,
 
-  // python
-  'py',
-
-  // Rust
-  'rs',
-
-  // Flutter
-  'dart',
-];
+    // python
+    /\.py$/,
+  ]
+    .map((regex) => regex.source)
+    .join('|'),
+);
 
 export const excludeFilePattern = new RegExp(
   [
@@ -38,6 +27,9 @@ export const excludeFilePattern = new RegExp(
     /\.bak$/,
     /\/.*?test\//,
     /\/.*?tests\//,
+    /\/__test__\//,
+    /\/__tests__\//,
+    /\/jest\//,
     /\/examples\//,
     /\/benchmark\//,
     /\/node_modules\//,
@@ -49,6 +41,8 @@ export const excludeFilePattern = new RegExp(
     /package-lock\.json$/,
     /\.eslintrc\.json$/,
     /\.min\.js$/,
+    /\.test\.js$/,
+    /\.test\.ts$/,
 
     // python
     /\.lock$/,
