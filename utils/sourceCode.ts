@@ -6,7 +6,7 @@ import { BlobWriter, Entry } from '@zip.js/zip.js';
 
 export const includeFilePattern = new RegExp(
   [
-    /README\.md$/,
+    /readme\.md$/,
 
     // web
     /\.(js|mjs|jsx|ts|tsx|html|json)$/,
@@ -16,6 +16,7 @@ export const includeFilePattern = new RegExp(
   ]
     .map((regex) => regex.source)
     .join('|'),
+  'i',
 );
 
 export const excludeFilePattern = new RegExp(
@@ -49,6 +50,7 @@ export const excludeFilePattern = new RegExp(
   ]
     .map((regex) => regex.source)
     .join('|'),
+  'i',
 );
 
 const removeBase64Images = (content: string) => {
