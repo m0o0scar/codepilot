@@ -6,7 +6,7 @@ import { BlobWriter, Entry } from '@zip.js/zip.js';
 
 export const includeFilePattern = new RegExp(
   [
-    /readme\.md$/,
+    /\.md$/,
 
     // web
     /\.(js|mjs|jsx|ts|tsx|html|json)$/,
