@@ -13,6 +13,12 @@ export const includeFilePattern = new RegExp(
 
     // python
     /\.py$/,
+
+    // c, c++, c#
+    /\.(c|cc|cpp|cxx|cs|h|hpp)$/,
+
+    // others (java, rust, etc.)
+    /\.(java|rs)$/,
   ]
     .map((regex) => regex.source)
     .join('|'),
