@@ -9,7 +9,8 @@ export const includeFilePattern = new RegExp(
     /\.md$/,
 
     // web
-    /\.(js|mjs|jsx|ts|tsx|html|json)$/,
+    /package\.json/,
+    /\.(js|mjs|jsx|ts|tsx|html)$/,
 
     // python
     /\.py$/,
