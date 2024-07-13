@@ -9,7 +9,7 @@ export const config = {
   runtime: 'edge',
 };
 
-export const SOURCE_SCHEMA_VERSION = 16;
+export const SOURCE_SCHEMA_VERSION = 17;
 
 export type ResponseChunk =
   | { error: string }
